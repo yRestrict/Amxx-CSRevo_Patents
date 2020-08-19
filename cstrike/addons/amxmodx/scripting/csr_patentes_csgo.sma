@@ -62,14 +62,26 @@ enum _:CVAR_LIST
 	C_WELCOME_MSG,
 };
 
-new g_cvars[CVAR_LIST];
+enum _:PLAYER_DATA
+{
+	PD_LEVEL,
+	PD_XP,
+	PD_KILLS,
+	PD_DEATHS,
+	PD_ID,
+	PD_POS_RANK_SAVE,
+	bool:PD_HUD_INFO,
+	bool:PD_VIEW_MSG,
+	bool:PD_HUD_GEOIP,
+};
+
+new g_cvars			[CVAR_LIST];
+new g_playerData[33][PLAYER_DATA];
 
 new text[128], prefix[32], type[2], key[32], length, line, pre_ips_count, pre_names_count, pre_steamids_count, pre_flags_count;
-new xPlayerID[33], xMsgSync[1], xPlayerXP[33], xPlayerLevel[33], xPlayerName[32], xPlayerHudInfo[33], xGetAuth[64], xPlayerKills[33], xPlayerDeaths[33], xMotd[5000], xSayTyped[192],
-xSayMessage[192], xPlayerViewMsg[33], temp_cvar[2], file_prefixes[128], str_id[16], temp_key[35], temp_prefix[32], CsTeams:xUserTeam, Trie:pre_ips_collect, Trie:pre_names_collect,
-Trie:pre_steamids_collect, Trie:pre_flags_collect, Trie:client_prefix, xUserCity[50], xUserRegion[50], xMaxPlayers, xSayTxt, xCvarXpKillNormal, xCvarXpKillKnife, xCvarXpKillHs,
-xCvarXpDiedMin, xCvarXpDiedMax, xCvarXpKillHeGrenade, xCvarXpKillVipMore, xCvarPrefixOn, xCvarPrefixAdminViewSayFlag, xCvarPrefixBlockChars, xCvarXpNegative, xCvarWelcomeMsg, xCvarPttRankStyle,
-xMyPosRankSave[33], xPlayerHudGeoIp[33];
+new xMsgSync[1], xPlayerName[32], xGetAuth[64], xMotd[5000], xSayTyped[192],
+xSayMessage[192], temp_cvar[2], file_prefixes[128], str_id[16], temp_key[35], temp_prefix[32], CsTeams:xUserTeam, Trie:pre_ips_collect, Trie:pre_names_collect,
+Trie:pre_steamids_collect, Trie:pre_flags_collect, Trie:client_prefix, xUserCity[50], xUserRegion[50], xMaxPlayers, xSayTxt;
 
 new const db_top10_data[] 	= "db_top10_data";
 new const db_top10_names[] 	= "db_top10_names";
@@ -344,15 +356,15 @@ public plugin_cfg()
 
 public xResetVarsFull(id)
 {
-	xPlayerLevel[id] 	= 0;
-	xPlayerXP[id] 		= 0;
-	xPlayerHudInfo[id] 	= false;
-	xPlayerKills[id] 	= 0;
-	xPlayerDeaths[id] 	= 0;
-	xPlayerID[id] 		= 0;
-	xPlayerViewMsg[id] 	= false;
-	xMyPosRankSave[id] 	= 0;
-	xPlayerHudGeoIp[id] = false;
+	g_playerData[id][PD_LEVEL] 			= 0;
+	g_playerData[id][PD_XP] 			= 0;
+	g_playerData[id][PD_KILLS] 			= 0;
+	g_playerData[id][PD_DEATHS] 		= 0;
+	g_playerData[id][PD_ID] 			= 0;
+	g_playerData[id][PD_POS_RANK_SAVE] 	= 0;
+	g_playerData[id][PD_HUD_INFO] 		= false;
+	g_playerData[id][PD_VIEW_MSG] 		= false;
+	g_playerData[id][PD_HUD_GEOIP] 		= false;
 }
 
 public xRegUserLogoutPost(id) xResetVarsFull(id);
@@ -408,25 +420,28 @@ public xTeamInfo()
 {
 	new id = read_data(1);
 
-	if(is_user_connected(id) && get_pcvar_num(xCvarWelcomeMsg) && !xPlayerViewMsg[id])
+	if (!is_user_connected(id))
+		return PLUGIN_CONTINUE;
+	
+	if (!get_pcvar_num(g_cvars[C_WELCOME_MSG]))
+		return PLUGIN_CONTINUE;
+
+	// already viewed message.
+	if (g_playerData[id][PD_VIEW_MSG])
+		return PLUGIN_CONTINUE;
+
+	static szUserTeam[32];
+	read_data(2, szUserTeam, charsmax(szUserTeam));
+
+	switch(szUserTeam[0])
 	{
-		static xUserTeam[32];
-		
-		read_data(2, xUserTeam, charsmax(xUserTeam));
+		case 'C':
+			set_task(2.0, "xShowMsgWelcome", id + TASK_MSGWELCOME);
 
-		switch(xUserTeam[0])
-		{
-			case 'C':
-			{
-				set_task(2.0, "xShowMsgWelcome", id+TASK_MSGWELCOME);
-			}
-
-			case 'T':
-			{
-				set_task(2.0, "xShowMsgWelcome", id+TASK_MSGWELCOME);
-			}
-		}
+		case 'T':
+			set_task(2.0, "xShowMsgWelcome", id + TASK_MSGWELCOME);
 	}
+	return PLUGIN_CONTINUE;
 }
 
 public xTaskTopsEntry(id)
@@ -439,7 +454,7 @@ public xTaskTopsEntry(id)
 		return;
 	}
 
-	new xMyRank = xMyPosRankSave[id];
+	new xMyRank = g_playerData[id][PD_POS_RANK_SAVE];
 
 	static xPName[32];
 	get_user_name(id, xPName, charsmax(xPName));
@@ -456,23 +471,19 @@ public xShowMsgWelcome(id)
 {
 	id -= TASK_MSGWELCOME;
 
-	if(!is_user_connected(id))
+	if(is_user_connected(id))
 	{
-		remove_task(id+TASK_MSGWELCOME); return;
+		new xMyRank 	 = g_playerData[id][PD_POS_RANK_SAVE];
+		new xMyTotalRank = xNtvGetTotalTop10();
+
+		set_dhudmessage(0, 255, 0, 0.06, 0.33, 2, 0.0, 8.0, 0.08, 0.2);
+		show_dhudmessage(id, "Hello %n, Welcome to %n...^nYour rank is: %s for %s, have a great game.", id, 0, xAddPoint(xMyRank), xAddPoint(xMyTotalRank));
+
+		g_playerData[id][PD_VIEW_MSG] = true;
 	}
 
-	new xMyRank = xMyPosRankSave[id];
-	new xMyTotalRank = xNtvGetTotalTop10();
-
-	static xSvName[20];
-	static xPName[25];
-	get_user_name(id, xPName, charsmax(xPName));
-	get_user_name(0, xSvName, charsmax(xSvName));
-
-	set_dhudmessage(0, 255, 0, 0.06, 0.33, 2, 0.0, 8.0, 0.08, 0.2);
-	show_dhudmessage(id, "Olá %s, Bem vindo ao %s...^nSeu rank é: %s de %s, tenha um ótimo jogo.", xPName, xSvName, xAddPoint(xMyRank), xAddPoint(xMyTotalRank));
-
-	xPlayerViewMsg[id] = true;
+	if (task_exists(id + TASK_MSGWELCOME))
+		remove_task(id + TASK_MSGWELCOME); 
 }
 
 public xNewRound()
@@ -488,11 +499,15 @@ public xMenuOptHuds(id)
 
 	new xNewMenu = menu_create(xFmtxMenu, "_xMenuOptHuds");
 	
-	if(xPlayerHudInfo[id]) menu_additem(xNewMenu, "Ocultar \d[\yHud de XP/Patente/Info Telando\d]");
-	else menu_additem(xNewMenu, "Mostrar \d[\yHud de XP/Patente/Info Telando\d]");
+	if(g_playerData[id][PD_HUD_INFO])
+		menu_additem(xNewMenu, "Ocultar \d[\yHud de XP/Patente/Info Telando\d]");
+	else 
+		menu_additem(xNewMenu, "Mostrar \d[\yHud de XP/Patente/Info Telando\d]");
 
-	if(xPlayerHudGeoIp[id]) menu_additem(xNewMenu, "Ocultar minha localização para os outros não verem.");
-	else menu_additem(xNewMenu, "Mostrar minha localização para os outros verem.");
+	if(g_playerData[id][PD_HUD_GEOIP])
+		menu_additem(xNewMenu, "Ocultar minha localização para os outros não verem.");
+	else 
+		menu_additem(xNewMenu, "Mostrar minha localização para os outros verem.");
 	
 	menu_setprop(xNewMenu, MPROP_EXITNAME, "Sair");
 	menu_display(id, xNewMenu, 0);
@@ -502,7 +517,8 @@ public _xMenuOptHuds(id, menu, item)
 {
 	if(item == MENU_EXIT)
 	{
-		menu_destroy(menu); return;
+		menu_destroy(menu); 
+		return;
 	}
 	
 	switch(item)
@@ -525,22 +541,9 @@ public xMenuPatents(id)
 {
 	new xFmtxMenu[300];
 
-	switch(get_pcvar_num(xCvarPttRankStyle))
-	{
-		case 1:
-		{
-			formatex(xFmtxMenu, charsmax(xFmtxMenu), "%s \wMenu das Patentes.^n^n\
-			XP: %s \y| \wLevel: %d \y| \wPatente: %s", PREFIXMENUS, xAddPoint(xPlayerXP[id]), xPlayerLevel[id], xPatents[xPlayerLevel[id]][xRankName]);
-		}
-
-		case 2:
-		{
-			formatex(xFmtxMenu, charsmax(xFmtxMenu), "%s \wMenu das Patentes.^n^n\
-			XP: %s \y| \wLevel: %d \y| \wPatente: %s", PREFIXMENUS, xAddPoint(xPlayerXP[id]), xPlayerLevel[id], xPatents2[xPlayerLevel[id]][xRankName]);
-		}
-
-		default: set_pcvar_num(xCvarPttRankStyle, 1);
-	}
+	formatex(xFmtxMenu, charsmax(xFmtxMenu), 
+		"%s \wMenu das Patentes.^n^nXP: %s \y| \wLevel: %d \y| \wPatente: %s", 
+		PREFIXMENUS, xAddPoint(xPlayerXP[id]), xPlayerLevel[id], xPatents[xPlayerLevel[id]][xRankName]);
 	
 	new xNewMenu = menu_create(xFmtxMenu, "_xMenuPatents");
 	
@@ -606,26 +609,9 @@ public xListPatents(id)
 	iLen = formatex(xMotd, charsmax(xMotd), "<meta charset=UTF-8>\
 	<style>*{margin:0px;}body{color:#fff;background:url(^"http://goo.gl/RBEw1K^")}table{border-collapse:collapse;border: 1px solid #000;text-align:center;}</style>\
 	<body><table width=100%% height=100%% border=1><tr bgcolor=#4c4c4c style=^"color:#fff;^"><th width=50%%>RANK<th width=50%%>XP");
-
-	switch(get_pcvar_num(xCvarPttRankStyle))
+	for(i = 0; i < sizeof(xPatentsImages); i++)
 	{
-		case 1:
-		{
-			for(i = 0; i < sizeof(xPatentsImages); i++)
-			{
-				iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<tr><td>%s<td>%s", xGetListRankName(i), xAddPoint(xGetListRankExp(i)));
-			}
-		}
-
-		case 2:
-		{
-			for(i = 1; i < sizeof(xPatents2Images); i++)
-			{
-				iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<tr><td>%s<td>%s", xPatents2[i][xRankName], xAddPoint(xPatents2[i][xRankXp]));
-			}
-		}
-
-		default: set_pcvar_num(xCvarPttRankStyle, 1);
+		iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<tr><td>%s<td>%s", xGetListRankName(i), xAddPoint(xGetListRankExp(i)));
 	}
 }
 
@@ -691,32 +677,13 @@ public xViewPatentPlayerMotd(id)
 	<body><table width=100%% cellpadding=2 cellspacing=0 border=1>\
 	<tr align=center bgcolor=#eeeeee><th width=20%%>POS RANK.<th width=40%%>NOME<th width=10%%>KILLS<th width=10%%>MORTES<th width=15%%>XP<th width=20%%>PATENTE</tr>");
 
-	switch(get_pcvar_num(xCvarPttRankStyle))
-	{
-		case 1:
-		{
-			iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<tr align=center style=^"color:#fff^">");
-			iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td>%s", xAddPoint(xMyPosTop10));
-			iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td>%s", xPlayerName);
-			iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td>%s", xAddPoint(xPlayerKills[xPlayerID[id]]));
-			iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td>%s", xAddPoint(xPlayerDeaths[xPlayerID[id]]));
-			iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td>%s", xAddPoint(xPlayerXP[xPlayerID[id]]));
-			iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td><img src=^"%s^" width=80 hight=30/>", xGetUserImgRank(xPlayerLevel[xPlayerID[id]]));
-		}
-
-		case 2:
-		{
-			iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<tr align=center style=^"color:#fff^">");
-			iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td>%s", xAddPoint(xMyPosTop10));
-			iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td>%s", xPlayerName);
-			iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td>%s", xAddPoint(xPlayerKills[xPlayerID[id]]));
-			iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td>%s", xAddPoint(xPlayerDeaths[xPlayerID[id]]));
-			iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td>%s", xAddPoint(xPlayerXP[xPlayerID[id]]));
-			iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td><img src=^"%s^" width=40 hight=40/>", xPatents2Images[xPlayerLevel[xPlayerID[id]]]);
-		}
-
-		default: set_pcvar_num(xCvarPttRankStyle, 1);
-	}
+	iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<tr align=center style=^"color:#fff^">");
+	iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td>%s", xAddPoint(xMyPosTop10));
+	iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td>%s", xPlayerName);
+	iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td>%s", xAddPoint(xPlayerKills[xPlayerID[id]]));
+	iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td>%s", xAddPoint(xPlayerDeaths[xPlayerID[id]]));
+	iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td>%s", xAddPoint(xPlayerXP[xPlayerID[id]]));
+	iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td><img src=^"%s^" width=80 hight=30/>", xGetUserImgRank(xPlayerLevel[xPlayerID[id]]));
 }
 
 public xMenuSelectTop(id)
@@ -860,15 +827,7 @@ public xHookSay(id)
 	xUserTeam = cs_get_user_team(id);
 
 	new xMyRankName[32];
-
-	switch(get_pcvar_num(xCvarPttRankStyle))
-	{
-		case 1: formatex(xMyRankName, charsmax(xMyRankName), "%s", xPatents[xPlayerLevel[id]][xRankName]);
-		case 2: formatex(xMyRankName, charsmax(xMyRankName), "%s", xPatents2[xPlayerLevel[id]][xRankName]);
-
-		default: set_pcvar_num(xCvarPttRankStyle, 1);
-	}
-
+	formatex(xMyRankName, charsmax(xMyRankName), "%s", xPatents[xPlayerLevel[id]][xRankName]);
 	
 	if(temp_prefix[0])
 		formatex(xSayMessage, charsmax(xSayMessage), "^1%s^4%s ^3%s: ^4%s", xSayTeamInfoPrefix[is_user_alive(id)][xUserTeam], temp_prefix, xPlayerName, xSayTyped);
@@ -911,14 +870,7 @@ public xHookSayTeam(id)
 	xUserTeam = cs_get_user_team(id);
 
 	new xMyRankName[32];
-
-	switch(get_pcvar_num(xCvarPttRankStyle))
-	{
-		case 1: formatex(xMyRankName, charsmax(xMyRankName), "%s", xPatents[xPlayerLevel[id]][xRankName]);
-		case 2: formatex(xMyRankName, charsmax(xMyRankName), "%s", xPatents2[xPlayerLevel[id]][xRankName]);
-
-		default: set_pcvar_num(xCvarPttRankStyle, 1);
-	}
+	formatex(xMyRankName, charsmax(xMyRankName), "%s", xPatents[xPlayerLevel[id]][xRankName]);
 
 	if(temp_prefix[0])
 		formatex(xSayMessage, charsmax(xSayMessage), "^1%s^4%s ^3%s: ^4%s", xSayTeamInfoTeamPrefix[is_user_alive(id)][xUserTeam], temp_prefix, xPlayerName, xSayTyped);
@@ -1085,14 +1037,7 @@ public xNtvGetUserRankName(xPluginId, xNumParams)
 		return false;
 
 	new xUserName[64];
-
-	switch(get_pcvar_num(xCvarPttRankStyle))
-	{
-		case 1: formatex(xUserName, charsmax(xUserName), "%s", xPatents[xPlayerLevel[id]][xRankName]);
-		case 2: formatex(xUserName, charsmax(xUserName), "%s", xPatents2[xPlayerLevel[id]][xRankName]);
-
-		default: set_pcvar_num(xCvarPttRankStyle, 1);
-	}
+	formatex(xUserName, charsmax(xUserName), "%s", xPatents[xPlayerLevel[id]][xRankName]);
 	
 	new len = get_param(3);
 	set_string(2, xUserName, len);
@@ -1135,41 +1080,17 @@ public xDeathMsg()
 			if(get_pcvar_num(xCvarXpNegative)) xPlayerXP[xVictim] -= xDiedXp;
 		}
 
-		switch(get_pcvar_num(xCvarPttRankStyle))
+		if(xPlayerLevel[xKiller] < MAXLEVEL_CSGO-1)
 		{
-			case 1:
+			if(xPlayerXP[xKiller] >= xPatents[xPlayerLevel[xKiller]+1][xRankXp])
 			{
-				if(xPlayerLevel[xKiller] < MAXLEVEL_CSGO-1)
-				{
-					if(xPlayerXP[xKiller] >= xPatents[xPlayerLevel[xKiller]+1][xRankXp])
-					{
-						xCheckLevel(xKiller);
+				xCheckLevel(xKiller);
 
-						get_user_name(xKiller, xPlayerName, charsmax(xPlayerName));
+				get_user_name(xKiller, xPlayerName, charsmax(xPlayerName));
 							
-						//client_cmd(0, "speak ambience/3dmeagle")
-						xClientPrintColor(0, "%s !yJogador !g%s !ySubiu de level. Level: !g%d, !yPatente: !g%s!y.", PREFIXCHAT, xPlayerName, xPlayerLevel[xKiller], xPatents[xPlayerLevel[xKiller]][xRankName]);
-					}
-				}
+				//client_cmd(0, "speak ambience/3dmeagle")
+				xClientPrintColor(0, "%s !yJogador !g%s !ySubiu de level. Level: !g%d, !yPatente: !g%s!y.", PREFIXCHAT, xPlayerName, xPlayerLevel[xKiller], xPatents[xPlayerLevel[xKiller]][xRankName]);
 			}
-
-			case 2:
-			{
-				if(xPlayerLevel[xKiller] < MAXLEVEL_CSGO2-1)
-				{
-					if(xPlayerXP[xKiller] >= xPatents2[xPlayerLevel[xKiller]+1][xRankXp])
-					{
-						xCheckLevel(xKiller);
-
-						get_user_name(xKiller, xPlayerName, charsmax(xPlayerName));
-							
-						//client_cmd(0, "speak ambience/3dmeagle")
-						xClientPrintColor(0, "%s !yJogador !g%s !ySubiu de level. Level: !g%d, !yPatente: !g%s!y.", PREFIXCHAT, xPlayerName, xPlayerLevel[xKiller], xPatents2[xPlayerLevel[xKiller]][xRankName]);
-					}
-				}
-			}
-
-			default: set_pcvar_num(xCvarPttRankStyle, 1);
 		}
 
 		xPlayerKills[xKiller] ++;
@@ -1258,49 +1179,21 @@ public xCreateMotdTop10()
 		new xPlayerXpRank = str_to_num(xGetDataXps);
 		new xPlayerLvlRank;
 
-		switch(get_pcvar_num(xCvarPttRankStyle))
+		if(xPlayerLvlRank <= MAXLEVEL_CSGO-1)
 		{
-			case 1:
+			xPlayerLvlRank = 0;
+			
+			while(xPlayerXpRank >= xPatents[xPlayerLvlRank+1][xRankXp])
 			{
-				if(xPlayerLvlRank <= MAXLEVEL_CSGO-1)
-				{
-					xPlayerLvlRank = 0;
-					
-					while(xPlayerXpRank >= xPatents[xPlayerLvlRank+1][xRankXp])
-					{
-						xPlayerLvlRank ++;
+				xPlayerLvlRank ++;
 							
-						if(xPlayerLvlRank == MAXLEVEL_CSGO-1)
-							break;
-					}
-				}
-
-				iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<tr><td>%i<td>%s<td>%s<td>%s<td>%s<td><img src=^"%s^" width=80 hight=30/>", j + 1, szName, xAddPoint(str_to_num(szPlayerKills)),
-				xAddPoint(str_to_num(szPlayerDeahts)), xAddPoint(xPlayerXpRank), xGetUserImgRank(xPlayerLvlRank));
+				if(xPlayerLvlRank == MAXLEVEL_CSGO-1)
+					break;
 			}
-
-			case 2:
-			{
-				if(xPlayerLvlRank <= MAXLEVEL_CSGO2-1)
-				{
-					xPlayerLvlRank = 0;
-					
-					while(xPlayerXpRank >= xPatents2[xPlayerLvlRank+1][xRankXp])
-					{
-						xPlayerLvlRank ++;
-						
-						if(xPlayerLvlRank == MAXLEVEL_CSGO2-1)
-							break;
-					}
-
-				}
-
-				iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<tr><td>%i<td>%s<td>%s<td>%s<td>%s<td><img src=^"%s^" width=40 hight=40/>", j + 1, szName, xAddPoint(str_to_num(szPlayerKills)),
-				xAddPoint(str_to_num(szPlayerDeahts)), xAddPoint(xPlayerXpRank), xPatents2Images[xPlayerLvlRank]);
-			}
-
-			default: set_pcvar_num(xCvarPttRankStyle, 1);
 		}
+
+		iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<tr><td>%i<td>%s<td>%s<td>%s<td>%s<td><img src=^"%s^" width=80 hight=30/>", j + 1, szName, xAddPoint(str_to_num(szPlayerKills)),
+		xAddPoint(str_to_num(szPlayerDeahts)), xAddPoint(xPlayerXpRank), xGetUserImgRank(xPlayerLvlRank));
 	}
 	
 	ArrayDestroy(aKey);
@@ -1342,41 +1235,17 @@ public xSortData(Array:aArray, iItem1, iItem2, iData[], iDataSize)
 
 public xCheckLevel(id)
 {
-	switch(get_pcvar_num(xCvarPttRankStyle))
+	if(xPlayerLevel[id] <= MAXLEVEL_CSGO-1)
 	{
-		case 1:
-		{
-			if(xPlayerLevel[id] <= MAXLEVEL_CSGO-1)
-			{
-				xPlayerLevel[id] = 0;
+		xPlayerLevel[id] = 0;
 						
-				while(xPlayerXP[id] >= xPatents[xPlayerLevel[id]+1][xRankXp])
-				{
-					xPlayerLevel[id]++;
-							
-					if(xPlayerLevel[id] == MAXLEVEL_CSGO-1)
-						return false;
-				}
-			}
-		}
-
-		case 2:
+		while(xPlayerXP[id] >= xPatents[xPlayerLevel[id]+1][xRankXp])
 		{
-			if(xPlayerLevel[id] <= MAXLEVEL_CSGO2-1)
-			{
-				xPlayerLevel[id] = 0;
-						
-				while(xPlayerXP[id] >= xPatents2[xPlayerLevel[id]+1][xRankXp])
-				{
-					xPlayerLevel[id]++;
+			xPlayerLevel[id]++;
 							
-					if(xPlayerLevel[id] == MAXLEVEL_CSGO2-1)
-						return false;
-				}
-			}
+			if(xPlayerLevel[id] == MAXLEVEL_CSGO-1)
+				return false;
 		}
-
-		default: set_pcvar_num(xCvarPttRankStyle, 1);
 	}
 
 	return true;
@@ -1455,7 +1324,7 @@ public xLoadRanks(id)
 
 	set_task(1.0, "xHudInfo", id+TASK_HUDRANK, _, _, "b");
 
-	xMyPosRankSave[id] = xNtvGetUserPosTop10(id);
+	g_playerData[id][PD_POS_RANK_SAVE] = xNtvGetUserPosTop10(id);
 }
 
 public xMsgNoSave(id)
@@ -1512,88 +1381,43 @@ public xHudInfo(id)
 	{
 		remove_task(id+TASK_HUDRANK); return;
 	}
-
-	switch(get_pcvar_num(xCvarPttRankStyle))
+	
+	if(is_user_alive(id) && xPlayerHudInfo[id])
 	{
-		case 1:
+		set_hudmessage(HUD_HELP);
+
+		if(xPlayerLevel[id] < MAXLEVEL_CSGO-1)
 		{
-			if(is_user_alive(id) && xPlayerHudInfo[id])
-			{
-				set_hudmessage(HUD_HELP);
-
-				if(xPlayerLevel[id] < MAXLEVEL_CSGO-1)
-				{
-					if(equali(xPatents[xPlayerLevel[id]][xRankName], xPatents[xPlayerLevel[id]+1][xRankName]))
-						ShowSyncHudMsg(id, xMsgSync[0], "• Patente: %s^n• Prox. Patente: Suba mais seu level.^n• Level: %d^n• Exp: %s / %s", xPatents[xPlayerLevel[id]][xRankName], xPlayerLevel[id], xAddPoint(xPlayerXP[id]), xAddPoint(xPatents[xPlayerLevel[id]+1][xRankXp]));
-					else
-						ShowSyncHudMsg(id, xMsgSync[0], "• Patente: %s^n• Prox. Patente: %s^n• Level: %d^n• Exp: %s / %s", xPatents[xPlayerLevel[id]][xRankName], xPatents[xPlayerLevel[id]+1][xRankName], xPlayerLevel[id], xAddPoint(xPlayerXP[id]), xAddPoint(xPatents[xPlayerLevel[id]+1][xRankXp]));
-				}
-				else
-				{
-					ShowSyncHudMsg(id, xMsgSync[0], "• Patente: %s^n• Level: %d^n• Exp: %s", xPatents[xPlayerLevel[id]][xRankName], xPlayerLevel[id], xAddPoint(xPlayerXP[id]));
-				}
-			}
-			else if(xPlayerHudInfo[id])
-			{
-				static id2;
-				id2 = pev(id, pev_iuser2);
-
-				if(!is_user_alive(id2)) return;
-
-				static xPlayerIp[20];
-				get_user_ip(id2, xPlayerIp, charsmax(xPlayerIp), 1);
-
-				geoip_city(xPlayerIp, xUserCity, charsmax(xUserCity));
-				geoip_region_name(xPlayerIp, xUserRegion, charsmax(xUserRegion));
-				get_user_name(id2, xPlayerName, charsmax(xPlayerName));
-
-				set_hudmessage(0, 255, 0, 0.02, 0.20, 0, 0.01, 1.0, 1.0, 1.0);
-
-				if(!xPlayerHudGeoIp[id2] || equal(xUserCity, "") || equal(xUserRegion, ""))
-					ShowSyncHudMsg(id, xMsgSync[0], "Observando: %s^n^n• Patente: %s^n• Level: %d^n• Exp: %s", xPlayerName, xPatents[xPlayerLevel[id2]][xRankName], xPlayerLevel[id2], xAddPoint(xPlayerXP[id2]));
-				else ShowSyncHudMsg(id, xMsgSync[0], "Observando: %s^n^n• Patente: %s^n• Level: %d^n• Exp: %s^n• Cidade: %s^n• Estado: %s", xPlayerName, xPatents[xPlayerLevel[id2]][xRankName], xPlayerLevel[id2], xAddPoint(xPlayerXP[id2]), xUserCity, xUserRegion);
-			}
+			if(equali(xPatents[xPlayerLevel[id]][xRankName], xPatents[xPlayerLevel[id]+1][xRankName]))
+				ShowSyncHudMsg(id, xMsgSync[0], "• Patente: %s^n• Prox. Patente: Suba mais seu level.^n• Level: %d^n• Exp: %s / %s", xPatents[xPlayerLevel[id]][xRankName], xPlayerLevel[id], xAddPoint(xPlayerXP[id]), xAddPoint(xPatents[xPlayerLevel[id]+1][xRankXp]));
+			else
+				ShowSyncHudMsg(id, xMsgSync[0], "• Patente: %s^n• Prox. Patente: %s^n• Level: %d^n• Exp: %s / %s", xPatents[xPlayerLevel[id]][xRankName], xPatents[xPlayerLevel[id]+1][xRankName], xPlayerLevel[id], xAddPoint(xPlayerXP[id]), xAddPoint(xPatents[xPlayerLevel[id]+1][xRankXp]));
 		}
-
-		case 2:
+		else
 		{
-			if(is_user_alive(id) && xPlayerHudInfo[id])
-			{
-				set_hudmessage(HUD_HELP2);
-
-				if(xPlayerLevel[id] < MAXLEVEL_CSGO2-1)
-				{
-					ShowSyncHudMsg(id, xMsgSync[0], "• Patente: %s^n• Prox. Patente: %s^n• Level: %d^n• Exp: %s / %s", xPatents2[xPlayerLevel[id]][xRankName], xPatents2[xPlayerLevel[id]+1][xRankName], xPlayerLevel[id],
-					xAddPoint(xPlayerXP[id]), xAddPoint(xPatents2[xPlayerLevel[id]+1][xRankXp]));
-				}
-				else
-				{
-					ShowSyncHudMsg(id, xMsgSync[0], "• Patente: %s^n• Level: %d^n• Exp: %s", xPatents2[xPlayerLevel[id]][xRankName], xPlayerLevel[id], xAddPoint(xPlayerXP[id]));
-				}
-			}
-			else if(xPlayerHudInfo[id])
-			{
-				new id2;
-				id2 = pev(id, pev_iuser2);
-
-				if(!is_user_alive(id2)) return;
-
-				static xPlayerIp[20];
-				get_user_ip(id2, xPlayerIp, charsmax(xPlayerIp), 1);
-
-				geoip_city(xPlayerIp, xUserCity, charsmax(xUserCity));
-				geoip_region_name(xPlayerIp, xUserRegion, charsmax(xUserRegion));
-				get_user_name(id2, xPlayerName, charsmax(xPlayerName));
-
-				set_hudmessage(0, 255, 0, 0.02, 0.20, 0, 0.01, 1.0, 1.0, 1.0);
-
-				if(!xPlayerHudGeoIp[id2] || equal(xUserCity, "") || equal(xUserRegion, ""))
-					ShowSyncHudMsg(id, xMsgSync[0], "Observando: %s^n^n• Patente: %s^n• Level: %d^n• Exp: %s", xPlayerName, xPatents2[xPlayerLevel[id2]][xRankName], xPlayerLevel[id2], xAddPoint(xPlayerXP[id2]));
-				else ShowSyncHudMsg(id, xMsgSync[0], "Observando: %s^n^n• Patente: %s^n• Level: %d^n• Exp: %s^n• Cidade: %s^n• Estado: %s", xPlayerName, xPatents2[xPlayerLevel[id2]][xRankName], xPlayerLevel[id2], xAddPoint(xPlayerXP[id2]), xUserCity, xUserRegion);
-			}
+			ShowSyncHudMsg(id, xMsgSync[0], "• Patente: %s^n• Level: %d^n• Exp: %s", xPatents[xPlayerLevel[id]][xRankName], xPlayerLevel[id], xAddPoint(xPlayerXP[id]));
 		}
+	}
+	else if(xPlayerHudInfo[id])
+	{
+		static id2;
+		id2 = pev(id, pev_iuser2);
 
-		default: set_pcvar_num(xCvarPttRankStyle, 1);
+		if(!is_user_alive(id2)) return;
+
+		static xPlayerIp[20];
+		get_user_ip(id2, xPlayerIp, charsmax(xPlayerIp), 1);
+
+		geoip_city(xPlayerIp, xUserCity, charsmax(xUserCity));
+		geoip_region_name(xPlayerIp, xUserRegion, charsmax(xUserRegion));
+		get_user_name(id2, xPlayerName, charsmax(xPlayerName));
+
+		set_hudmessage(0, 255, 0, 0.02, 0.20, 0, 0.01, 1.0, 1.0, 1.0);
+
+		if(!xPlayerHudGeoIp[id2] || equal(xUserCity, "") || equal(xUserRegion, ""))
+			ShowSyncHudMsg(id, xMsgSync[0], "Observando: %s^n^n• Patente: %s^n• Level: %d^n• Exp: %s", xPlayerName, xPatents[xPlayerLevel[id2]][xRankName], xPlayerLevel[id2], xAddPoint(xPlayerXP[id2]));
+		else 
+			ShowSyncHudMsg(id, xMsgSync[0], "Observando: %s^n^n• Patente: %s^n• Level: %d^n• Exp: %s^n• Cidade: %s^n• Estado: %s", xPlayerName, xPatents[xPlayerLevel[id2]][xRankName], xPlayerLevel[id2], xAddPoint(xPlayerXP[id2]), xUserCity, xUserRegion);
 	}
 }
 
