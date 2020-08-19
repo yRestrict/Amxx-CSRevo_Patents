@@ -6,7 +6,7 @@
 #include <amxmisc>
 #include <cstrike>
 #include <fakemeta>
-#include <fvault>
+// #include <fvault>
 #include <geoip>
 #include <hamsandwich>
 
@@ -43,17 +43,37 @@ enum _:xTop15Data
 	szSkillP_Data[128]
 }
 
-enum _:
+enum _:CVAR_LIST
+{
+	C_RANK_STYLE,
+	C_TOP10_SAY_GREEN,
+	C_TOP10_SAY_AMOUNT,
+	C_XP_KILL_NORMAL,
+	C_XP_KILL_KNIFE,
+	C_XP_KILL_HS,
+	C_XP_KILL_HE,
+	C_XP_DEAD_MIN,
+	C_XP_DEAD_MAX,
+	C_XP_KILL_VIP_MORE,
+	C_XP_PREFIX_ON,
+	C_XP_PREFIX_ADMIN_VIEW_SAY,
+	C_XP_PREFIX_BLOCK_CHARS,
+	C_XP_NEGATIVE,
+	C_WELCOME_MSG,
+};
+
+new g_cvars[CVAR_LIST];
+
 new text[128], prefix[32], type[2], key[32], length, line, pre_ips_count, pre_names_count, pre_steamids_count, pre_flags_count;
 new xPlayerID[33], xMsgSync[1], xPlayerXP[33], xPlayerLevel[33], xPlayerName[32], xPlayerHudInfo[33], xGetAuth[64], xPlayerKills[33], xPlayerDeaths[33], xMotd[5000], xSayTyped[192],
 xSayMessage[192], xPlayerViewMsg[33], temp_cvar[2], file_prefixes[128], str_id[16], temp_key[35], temp_prefix[32], CsTeams:xUserTeam, Trie:pre_ips_collect, Trie:pre_names_collect,
 Trie:pre_steamids_collect, Trie:pre_flags_collect, Trie:client_prefix, xUserCity[50], xUserRegion[50], xMaxPlayers, xSayTxt, xCvarXpKillNormal, xCvarXpKillKnife, xCvarXpKillHs,
 xCvarXpDiedMin, xCvarXpDiedMax, xCvarXpKillHeGrenade, xCvarXpKillVipMore, xCvarPrefixOn, xCvarPrefixAdminViewSayFlag, xCvarPrefixBlockChars, xCvarXpNegative, xCvarWelcomeMsg, xCvarPttRankStyle,
-xMyPosRankSave[33], xCvarTop10SayGreen, xCvarTop10SayAmount, xPlayerHudGeoIp[33];
+xMyPosRankSave[33], xPlayerHudGeoIp[33];
 
-new const db_top10_data[] = "db_top10_data";
-new const db_top10_names[] = "db_top10_names";
-new const db_patents[] = "db_patentes";
+new const db_top10_data[] 	= "db_top10_data";
+new const db_top10_names[] 	= "db_top10_names";
+new const db_patents[] 		= "db_patentes";
 
 new const xSayTeamInfoPrefix[2][CsTeams][] =
 {
@@ -246,22 +266,21 @@ public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 
-	// xCvarSaveType 			= register_cvar("csr_ptt_savetype_data", "1"); // 1= Steam + NoSteam com Sxe || 2= Por conta/registro
-	xCvarPttRankStyle 			= register_cvar("csr_ptt_rank_style", "1"); // 1= Rank CSGO (ingame) || 2= Rank CSGO Perfil
-	xCvarTop10SayGreen 			= register_cvar("csr_ptt_top10_saygreen", "0");
-	xCvarTop10SayAmount 		= register_cvar("csr_ptt_top10_say_amount", "10");
-	xCvarXpKillNormal 			= register_cvar("csr_ptt_xp_kill_normal", "2");
-	xCvarXpKillKnife 			= register_cvar("csr_ptt_xp_kill_knife", "4");
-	xCvarXpKillHs 				= register_cvar("csr_ptt_xp_kill_hs", "3");
-	xCvarXpKillHeGrenade 		= register_cvar("csr_ptt_xp_kill_hegrenade", "5");
-	xCvarXpDiedMin 				= register_cvar("csr_ptt_xp_died_min", "1");
-	xCvarXpDiedMax 				= register_cvar("csr_ptt_xp_died_max", "2");
-	xCvarXpKillVipMore 			= register_cvar("csr_ptt_xp_kill_vip_more", "1");
-	xCvarPrefixOn 				= register_cvar("csr_ptt_prefix_on", "0");
-	xCvarPrefixAdminViewSayFlag = register_cvar("csr_ptt_prefix_admin_view_say_flag", "a");
-	xCvarPrefixBlockChars 		= register_cvar("csr_ptt_prefix_block_chars", "1");
-	xCvarXpNegative 			= register_cvar("csr_ptt_xp_negatives", "0");
-	xCvarWelcomeMsg 			= register_cvar("csr_ptt_welcome_msg", "0");
+	g_cvars[C_RANK_STYLE] 				= register_cvar("csr_ptt_rank_style", 					"1"); // 1= Rank CSGO (ingame) || 2= Rank CSGO Perfil
+	g_cvars[C_TOP10_SAY_GREEN] 			= register_cvar("csr_ptt_top10_saygreen", 				"0");
+	g_cvars[C_TOP10_SAY_AMOUNT] 		= register_cvar("csr_ptt_top10_say_amount", 			"10");
+	g_cvars[C_XP_KILL_NORMAL] 			= register_cvar("csr_ptt_xp_kill_normal", 				"2");
+	g_cvars[C_XP_KILL_KNIFE] 			= register_cvar("csr_ptt_xp_kill_knife", 				"4");
+	g_cvars[C_XP_KILL_HS] 				= register_cvar("csr_ptt_xp_kill_hs", 					"3");
+	g_cvars[C_XP_KILL_HE] 				= register_cvar("csr_ptt_xp_kill_hegrenade",			"5");
+	g_cvars[C_XP_DEAD_MIN] 				= register_cvar("csr_ptt_xp_died_min", 					"1");
+	g_cvars[C_XP_DEAD_MAX] 				= register_cvar("csr_ptt_xp_died_max", 					"2");
+	g_cvars[C_XP_KILL_VIP_MORE] 		= register_cvar("csr_ptt_xp_kill_vip_more", 			"1");
+	g_cvars[C_XP_PREFIX_ON] 			= register_cvar("csr_ptt_prefix_on", 					"0");
+	g_cvars[C_XP_PREFIX_ADMIN_VIEW_SAY] = register_cvar("csr_ptt_prefix_admin_view_say_flag",	"a");
+	g_cvars[C_XP_PREFIX_BLOCK_CHARS] 	= register_cvar("csr_ptt_prefix_block_chars",			"1");
+	g_cvars[C_XP_NEGATIVE] 				= register_cvar("csr_ptt_xp_negatives", 				"0");
+	g_cvars[C_WELCOME_MSG] 				= register_cvar("csr_ptt_welcome_msg", 					"0");
 
 	register_concmd("amx_reloadprefix", "xLoadPrefix");
 
@@ -284,12 +303,9 @@ public plugin_init()
 	register_event("HLTV", 		"xNewRound", "a", "1=0", "2=0");
 	register_event("TeamInfo", 	"xTeamInfo", "a");
 
-	register_forward(FM_ClientPutInServer, 		"xClientPutInServer");
-	register_forward(FM_ClientDisconnect, 		"xClientDisconnect");
-	register_forward(FM_ClientUserInfoChanged, 	"xClientUserInfoChanged", 1);
 	//RegisterHam(Ham_Spawn, "player", "xPlayerSpawnPost", 1)
 
-	xSayTxt = get_user_msgid("SayText");
+	xSayTxt 	= get_user_msgid("SayText");
 	xMaxPlayers = get_maxplayers();
 	xMsgSync[0] = CreateHudSyncObj();
 
@@ -328,19 +344,19 @@ public plugin_cfg()
 
 public xResetVarsFull(id)
 {
-	xPlayerLevel[id] = 0;
-	xPlayerXP[id] = 0;
-	xPlayerHudInfo[id] = false;
-	xPlayerKills[id] = 0;
-	xPlayerDeaths[id] = 0;
-	xPlayerID[id] = 0;
-	xPlayerViewMsg[id] = false;
-	xMyPosRankSave[id] = 0;
+	xPlayerLevel[id] 	= 0;
+	xPlayerXP[id] 		= 0;
+	xPlayerHudInfo[id] 	= false;
+	xPlayerKills[id] 	= 0;
+	xPlayerDeaths[id] 	= 0;
+	xPlayerID[id] 		= 0;
+	xPlayerViewMsg[id] 	= false;
+	xMyPosRankSave[id] 	= 0;
 	xPlayerHudGeoIp[id] = false;
 }
 
 public xRegUserLogoutPost(id) xResetVarsFull(id);
-public xClientDisconnect(id) xResetVarsFull(id);
+public client_disconnected(id) xResetVarsFull(id);
 
 public xRegUserLoginPost(id)
 {
@@ -351,7 +367,7 @@ public xRegUserLoginPost(id)
 	xSaveTop10Names(id);
 }
 
-public xClientPutInServer(id)
+public client_putinserver(id)
 {
 	xResetVarsFull(id);
 
@@ -843,9 +859,7 @@ public xHookSay(id)
 
 	xUserTeam = cs_get_user_team(id);
 
-	new xMyRank, xMyRankName[32];
-
-	xMyRank = xMyPosRankSave[id];
+	new xMyRankName[32];
 
 	switch(get_pcvar_num(xCvarPttRankStyle))
 	{
@@ -896,9 +910,7 @@ public xHookSayTeam(id)
 
 	xUserTeam = cs_get_user_team(id);
 
-	new xMyRank, xMyRankName[32];
-
-	xMyRank = xMyPosRankSave[id];
+	new xMyRankName[32];
 
 	switch(get_pcvar_num(xCvarPttRankStyle))
 	{
@@ -1001,7 +1013,7 @@ public xNtvGetUserPosTop10(id)
 	new Array:aData = ArrayCreate(128);
 	new Array:aAll = ArrayCreate(xTop15Data);
 	
-	fvault_load(db_top10_data, aKey, aData);
+	// fvault_load(db_top10_data, aKey, aData);
 	
 	new iArraySize = ArraySize(aKey);
 	
@@ -1042,7 +1054,7 @@ public xNtvGetTotalTop10()
 	new Array:aKey = ArrayCreate(64);
 	new Array:aData = ArrayCreate(512);
 		
-	new xTotalVaults = fvault_load(db_top10_data, aKey, aData);
+	new xTotalVaults; // = fvault_load(db_top10_data, aKey, aData);
 
 	ArrayDestroy(aKey);
 	ArrayDestroy(aData);
@@ -1205,7 +1217,7 @@ public xCreateMotdTop10()
 	new Array:aData = ArrayCreate(128);
 	new Array:aAll = ArrayCreate(xTop15Data);
 	
-	fvault_load(db_top10_data, aKey, aData);
+	// fvault_load(db_top10_data, aKey, aData);
 	
 	new iArraySize = ArraySize(aKey);
 	
@@ -1233,7 +1245,7 @@ public xCreateMotdTop10()
 	{
 		ArrayGetArray( aAll, j, Data );
 		
-		fvault_get_data( db_top10_names, Data[ szAuthID ], szName, charsmax( szName ) );
+//		fvault_get_data( db_top10_names, Data[ szAuthID ], szName, charsmax( szName ) );
 		
 		replace_all(szName, charsmax(szName), "<", "");
 		replace_all(szName, charsmax(szName), ">", "");
@@ -1241,7 +1253,7 @@ public xCreateMotdTop10()
 		
 		parse(Data[szSkillP_Data],szPlayerKills, charsmax(szPlayerKills), szPlayerDeahts, charsmax(szPlayerDeahts));
 		
-		fvault_get_data(db_patents, Data[ szAuthID ], xGetDataXps, charsmax(xGetDataXps));
+//		fvault_get_data(db_patents, Data[ szAuthID ], xGetDataXps, charsmax(xGetDataXps));
 
 		new xPlayerXpRank = str_to_num(xGetDataXps);
 		new xPlayerLvlRank;
@@ -1380,7 +1392,7 @@ public xSaveRanks(id)
 	get_user_authid(id, xGetAuth, charsmax(xGetAuth));
 
 	num_to_str(xPlayerXP[id], xData, charsmax(xData));
-	fvault_set_data(db_patents, xGetAuth, xData);
+	// fvault_set_data(db_patents, xGetAuth, xData);
 
 	return PLUGIN_HANDLED;
 }
@@ -1395,7 +1407,7 @@ public xSaveTop10Data(id)
 	get_user_authid(id, xGetAuth, charsmax(xGetAuth));
 
 	formatex(xData, charsmax(xData), "%i %i", xPlayerKills[id], xPlayerDeaths[id]);
-	fvault_set_data(db_top10_data, xGetAuth, xData);
+	// fvault_set_data(db_top10_data, xGetAuth, xData);
 
 	return PLUGIN_HANDLED;
 }
@@ -1408,7 +1420,7 @@ public xSaveTop10Names(id)
 	get_user_authid(id, xGetAuth, charsmax(xGetAuth));
 
 	get_user_name(id, xPlayerName, charsmax(xPlayerName));
-	fvault_set_data(db_top10_names, xGetAuth, xPlayerName);
+	// fvault_set_data(db_top10_names, xGetAuth, xPlayerName);
 
 	return PLUGIN_HANDLED;
 }
@@ -1418,7 +1430,7 @@ public xLoadKillsDeaths(id)
 	new xData[128], xMyKills[50], xMyDeaths[50];
 	get_user_authid(id, xGetAuth, charsmax(xGetAuth));
 
-	if(fvault_get_data(db_top10_data, xGetAuth, xData, charsmax(xData)))
+	// if(fvault_get_data(db_top10_data, xGetAuth, xData, charsmax(xData)))
 	{
 		parse(xData, xMyKills, charsmax(xMyKills), xMyDeaths, charsmax(xMyDeaths));
 				
@@ -1436,7 +1448,7 @@ public xLoadRanks(id)
 	new xData[30];
 	get_user_authid(id, xGetAuth, charsmax(xGetAuth));
 
-	if(fvault_get_data(db_patents, xGetAuth, xData, charsmax(xData)))
+	// if(fvault_get_data(db_patents, xGetAuth, xData, charsmax(xData)))
 		xPlayerXP[id] = str_to_num(xData);
 
 	xCheckLevel(id);
@@ -1468,7 +1480,7 @@ public xMsgLoginInAccount(id)
 	}
 }
 
-public xClientUserInfoChanged(id)
+public client_infochanged(id)
 {
 	if(!is_user_connected(id))
 		return FMRES_IGNORED;
