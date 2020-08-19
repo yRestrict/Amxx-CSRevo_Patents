@@ -79,9 +79,26 @@ new g_cvars			[CVAR_LIST];
 new g_playerData[33][PLAYER_DATA];
 
 new text[128], prefix[32], type[2], key[32], length, line, pre_ips_count, pre_names_count, pre_steamids_count, pre_flags_count;
-new xMsgSync[1], xPlayerName[32], xGetAuth[64], xMotd[5000], xSayTyped[192],
-xSayMessage[192], temp_cvar[2], file_prefixes[128], str_id[16], temp_key[35], temp_prefix[32], CsTeams:xUserTeam, Trie:pre_ips_collect, Trie:pre_names_collect,
-Trie:pre_steamids_collect, Trie:pre_flags_collect, Trie:client_prefix, xUserCity[50], xUserRegion[50], xMaxPlayers, xSayTxt;
+new xMsgSync[1], 
+	xGetAuth[64], 
+	xMotd[5000], 
+	xSayTyped[192],
+	xSayMessage[192], 
+	temp_cvar[2], 
+	file_prefixes[128], 
+	str_id[16], 
+	temp_key[35], 
+	temp_prefix[32], 
+	CsTeams:xUserTeam, 
+	Trie:pre_ips_collect, 
+	Trie:pre_names_collect,
+	Trie:pre_steamids_collect, 
+	Trie:pre_flags_collect, 
+	Trie:client_prefix, 
+	xUserCity[50], 
+	xUserRegion[50], 
+	xMaxPlayers, 
+	xSayTxt;
 
 new const db_top10_data[] 	= "db_top10_data";
 new const db_top10_names[] 	= "db_top10_names";
@@ -543,7 +560,7 @@ public xMenuPatents(id)
 
 	formatex(xFmtxMenu, charsmax(xFmtxMenu), 
 		"%s \wMenu das Patentes.^n^nXP: %s \y| \wLevel: %d \y| \wPatente: %s", 
-		PREFIXMENUS, xAddPoint(xPlayerXP[id]), xPlayerLevel[id], xPatents[xPlayerLevel[id]][xRankName]);
+		PREFIXMENUS, xAddPoint(g_playerData[id][PD_XP]), g_playerData[id][PD_LEVEL], xPatents[g_playerData[id][PD_LEVEL]][xRankName]);
 	
 	new xNewMenu = menu_create(xFmtxMenu, "_xMenuPatents");
 	
@@ -566,14 +583,10 @@ public _xMenuPatents(id, menu, item)
 	switch(item)
 	{
 		case 0:
-		{
 			xMenuSelectTop(id);
-		}
 
 		case 1:
-		{
 			xViewPatentPlayer(id);
-		}
 
 		case 2:
 		{
@@ -598,7 +611,12 @@ public xMotdHelp(id)
 	<style>body{background: #000 url(^"http://i.imgur.com/FDiuoIk.jpg^") no-repeat fixed center;}table, th, td{border: 1px solid black;border-collapse: collapse;}</style></head><body><table width=100%% cellpadding=2 cellspacing=0 border=1><tr align=center bgcolor=#eeeeee><th width=110%%>AJUDA</tr>");
 	
 	iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<tr align=center style=^"color:#fff;font-size:130%%^">");
-	iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td>- Primeiramente, para que seus dados fiquem salvos no banco de dados você precisa estar de sxe ou (estar logado na conta, se ativado!).<br><br> À cada Kill que você faz, você ganha <b>[%d XP]</b>, se morrer você perde de <b>[%d XP]</b> a <b>[%d XP]</b>.<br><br>Jogadores <b>VIPS</b> ganha <b>+%d</b> a mais de XP, ao mesmo perde <b>+%d XP</b>.", get_pcvar_num(xCvarXpKillNormal), get_pcvar_num(xCvarXpDiedMin), get_pcvar_num(xCvarXpDiedMax), get_pcvar_num(xCvarXpKillVipMore), get_pcvar_num(xCvarXpKillVipMore));
+	iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td>- Primeiramente, para que seus dados fiquem salvos no banco de dados você precisa estar de sxe ou (estar logado na conta, se ativado!).<br><br> À cada Kill que você faz, você ganha <b>[%d XP]</b>, se morrer você perde de <b>[%d XP]</b> a <b>[%d XP]</b>.<br><br>Jogadores <b>VIPS</b> ganha <b>+%d</b> a mais de XP, ao mesmo perde <b>+%d XP</b>.",
+			get_pcvar_num(g_cvars[C_XP_KILL_NORMAL]), 
+			get_pcvar_num(g_cvars[C_XP_DEAD_MIN]),
+			get_pcvar_num(g_cvars[C_XP_DEAD_MAX]), 
+			get_pcvar_num(g_cvars[C_XP_KILL_VIP_MORE]), 
+			get_pcvar_num(g_cvars[C_XP_KILL_VIP_MORE]));
 
 	iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "</table></body></html>");
 }
@@ -633,9 +651,8 @@ public xViewPatentPlayer(id)
 		
 		if(id != xTempId)
 		{
-			get_user_name(xTempId, xPlayerName, charsmax(xPlayerName));
 			num_to_str(xTempId, xSzTempId, 9);
-			menu_additem(xNewMenu, xPlayerName, xSzTempId, 0);
+			menu_additem(xNewMenu, fmt("%n", xTempId), xSzTempId, 0);
 		}
 	}
 
@@ -657,10 +674,7 @@ public _xViewPatentPlayer(id, menu, item)
 	
 	menu_item_getinfo(menu, item, access, data, 19, iname, 99, callback);
 	
-	xPlayerID[id] = str_to_num(data);
-
-	get_user_name(xPlayerID[id], xPlayerName, charsmax(xPlayerName));
-
+	g_playerData[id][PD_ID] = str_to_num(data);
 	xViewPatentPlayerMotd(id);
 	show_motd(id, xMotd, "INFO PLAYER");
 	xViewPatentPlayer(id);
@@ -669,7 +683,7 @@ public _xViewPatentPlayer(id, menu, item)
 public xViewPatentPlayerMotd(id)
 {
 	new xMyPosTop10;
-	xMyPosTop10 = xMyPosRankSave[xPlayerID[id]];
+	xMyPosTop10 = g_playerData[g_playerData[id][PD_ID]][PD_POS_RANK_SAVE];
 
 	new iLen;
 	iLen = formatex(xMotd, charsmax(xMotd), "<head><meta charset=UTF-8>\
@@ -679,11 +693,11 @@ public xViewPatentPlayerMotd(id)
 
 	iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<tr align=center style=^"color:#fff^">");
 	iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td>%s", xAddPoint(xMyPosTop10));
-	iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td>%s", xPlayerName);
-	iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td>%s", xAddPoint(xPlayerKills[xPlayerID[id]]));
-	iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td>%s", xAddPoint(xPlayerDeaths[xPlayerID[id]]));
-	iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td>%s", xAddPoint(xPlayerXP[xPlayerID[id]]));
-	iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td><img src=^"%s^" width=80 hight=30/>", xGetUserImgRank(xPlayerLevel[xPlayerID[id]]));
+	iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td>%n", g_playerData[id][PD_ID]);
+	iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td>%s", xAddPoint(g_playerData[g_playerData[id][PD_ID]][PD_KILLS]));
+	iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td>%s", xAddPoint(g_playerData[g_playerData[id][PD_ID]][PD_DEATHS]));
+	iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td>%s", xAddPoint(g_playerData[g_playerData[id][PD_ID]][PD_XP]));
+	iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td><img src=^"%s^" width=80 hight=30/>", xGetUserImgRank(g_playerData[g_playerData[id][PD_ID]][PD_LEVEL]));
 }
 
 public xMenuSelectTop(id)
@@ -727,9 +741,13 @@ public _xMenuSelectTop(id, menu, item)
 public xSkillTop10(id)
 {
 	new xMyPosTop10;
-	xMyPosTop10 = xMyPosRankSave[id];
+	xMyPosTop10 = g_playerData[id][PD_POS_RANK_SAVE];
 
-	xClientPrintColor(id, "%s !ySua posição é: !g%s !yde !g%s !ycom !g%s !ykills e !g%s !ymortes.", PREFIXCHAT, xAddPoint(xMyPosTop10), xAddPoint(xNtvGetTotalTop10()), xAddPoint(xPlayerKills[id]), xAddPoint(xPlayerDeaths[id]));
+	xClientPrintColor(id, "%s !ySua posição é: !g%s !yde !g%s !ycom !g%s !ykills e !g%s !ymortes.", PREFIXCHAT, 
+		xAddPoint(xMyPosTop10), 
+		xAddPoint(xNtvGetTotalTop10()), 
+		xAddPoint(g_playerData[id][PD_KILLS]), 
+		xAddPoint(g_playerData[id][PD_DEATHS]));
 }
 
 public xLoadPrefix(id)
@@ -816,13 +834,14 @@ public xHookSay(id)
 
 	num_to_str(id, str_id, charsmax(str_id));
 
-	if((TrieGetString(client_prefix, str_id, temp_prefix, charsmax(temp_prefix)) && get_pcvar_num(xCvarPrefixBlockChars) == 1) || (!TrieGetString(client_prefix, str_id, temp_prefix, charsmax(temp_prefix)) && get_pcvar_num(xCvarPrefixBlockChars) == 2) || get_pcvar_num(xCvarPrefixBlockChars) == 3)
+	if(( TrieGetString(client_prefix, str_id, temp_prefix, charsmax(temp_prefix)) && get_pcvar_num(xCvarPrefixBlockChars) == 1) 
+	|| (!TrieGetString(client_prefix, str_id, temp_prefix, charsmax(temp_prefix)) && get_pcvar_num(xCvarPrefixBlockChars) == 2) 
+	||   get_pcvar_num(xCvarPrefixBlockChars) == 3)
 	{
 		if(check_say_characters(xSayTyped))
 			return PLUGIN_HANDLED_MAIN;
 	}
 
-	get_user_name(id, xPlayerName, charsmax(xPlayerName));
 
 	xUserTeam = cs_get_user_team(id);
 
@@ -830,9 +849,9 @@ public xHookSay(id)
 	formatex(xMyRankName, charsmax(xMyRankName), "%s", xPatents[xPlayerLevel[id]][xRankName]);
 	
 	if(temp_prefix[0])
-		formatex(xSayMessage, charsmax(xSayMessage), "^1%s^4%s ^3%s: ^4%s", xSayTeamInfoPrefix[is_user_alive(id)][xUserTeam], temp_prefix, xPlayerName, xSayTyped);
+		formatex(xSayMessage, charsmax(xSayMessage), "^1%s^4%s ^3%n: ^4%s", xSayTeamInfoPrefix[is_user_alive(id)][xUserTeam], temp_prefix, id, xSayTyped);
 	else
-		formatex(xSayMessage, charsmax(xSayMessage), "^1%s^3%s: ^1%s", xSayTeamInfoPrefix[is_user_alive(id)][xUserTeam], xPlayerName, xSayTyped);
+		formatex(xSayMessage, charsmax(xSayMessage), "^1%s^3%n: ^1%s", xSayTeamInfoPrefix[is_user_alive(id)][xUserTeam], id, xSayTyped);
 
 	get_pcvar_string(xCvarPrefixAdminViewSayFlag, temp_cvar, charsmax(temp_cvar));
 
