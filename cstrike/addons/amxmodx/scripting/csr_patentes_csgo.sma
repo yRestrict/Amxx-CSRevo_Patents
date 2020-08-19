@@ -31,18 +31,6 @@
 #define TASK_MSGWELCOME 877415
 #define TASK_TOPSENTRY 	88833
 
-/*
-native reg_get_user_logged(id)
-native reg_get_user_account(id, account[], len)
-forward reg_user_login_post(id)
-forward reg_user_logout_post(id)
-
-#define xRegGetUserLogged(%1) reg_get_user_logged(%1)
-#define xRegGetUserAccount(%1,%2,%3) reg_get_user_account(%1,%2,%3)
-#define xRegUserLoginPost(%1) reg_user_login_post(%1)
-#define xRegUserLogoutPost(%1) reg_user_logout_post(%1)
-*/
-
 enum xDataPatents
 {
 	xRankName[32],
@@ -55,6 +43,7 @@ enum _:xTop15Data
 	szSkillP_Data[128]
 }
 
+enum _:
 new text[128], prefix[32], type[2], key[32], length, line, pre_ips_count, pre_names_count, pre_steamids_count, pre_flags_count;
 new xPlayerID[33], xMsgSync[1], xPlayerXP[33], xPlayerLevel[33], xPlayerName[32], xPlayerHudInfo[33], xGetAuth[64], xPlayerKills[33], xPlayerDeaths[33], xMotd[5000], xSayTyped[192],
 xSayMessage[192], xPlayerViewMsg[33], temp_cvar[2], file_prefixes[128], str_id[16], temp_key[35], temp_prefix[32], CsTeams:xUserTeam, Trie:pre_ips_collect, Trie:pre_names_collect,
@@ -63,18 +52,18 @@ xCvarXpDiedMin, xCvarXpDiedMax, xCvarXpKillHeGrenade, xCvarXpKillVipMore, xCvarP
 xMyPosRankSave[33], xCvarTop10SayGreen, xCvarTop10SayAmount, xPlayerHudGeoIp[33];
 
 new const db_top10_data[] = "db_top10_data";
-new const db_top10_names[] = "db_top10_nomes";
+new const db_top10_names[] = "db_top10_names";
 new const db_patents[] = "db_patentes";
 
 new const xSayTeamInfoPrefix[2][CsTeams][] =
 {
-	{ "*SPEC* ", "*MORTO* ", "*MORTO* ", "*SPEC* " },
+	{ "*SPEC* ", "*DEAD* ", "*DEAD* ", "*SPEC* " },
 	{ "", "", "", "" }
 };
 
 new const xSayTeamInfoTeamPrefix[2][CsTeams][] =
  {
-	{ "(SPEC) ", "*MORTO* (T) ", "*MORTO* (CT) ", "(SPEC) " },
+	{ "(SPEC) ", "*DEAD* (T) ", "*DEAD* (CT) ", "(SPEC) " },
 	{ "(SPEC) ", "(T) ", "(CT) ", "(SPEC) " }
 };
 
@@ -82,109 +71,109 @@ new const xBlockSymbolsSayPrefix[] = { "/", "!" /*"%","$"*/ };
 
 new const xPatents[][xDataPatents] =
 {
-		//Rank 		  XP/Lvl
-	{	"Prata I",		0		}, // Lvl 0
-	{	"Prata I",		40		}, // Lvl 1
-	{	"Prata I",		60		}, // Lvl 2
-	{	"Prata II",		80		}, // Lvl 3
-	{	"Prata II", 		100		}, // Lvl 4
-	{	"Prata II",		120		}, // Lvl 5
-	{	"Prata III",		140		}, // Lvl 6
-	{	"Prata III",		160		}, // Lvl 7
-	{	"Prata III",		180		}, // Lvl 8
-	{	"Prata IV",		200		}, // Lvl 9
-	{	"Prata IV",		220		}, // Lvl 10
-	{	"Prata IV",		240		}, // Lvl 11
-	{	"Prata V",		260		}, // Lvl 12
-	{	"Prata V",		280		}, // Lvl 13
-	{	"Prata V",		300		}, // Lvl 14
-	{	"Prata Elite",	320		}, // Lvl 15
-	{	"Prata Elite",	340		}, // Lvl 16
-	{	"Prata Elite",	350		}, // Lvl 17
-	{	"Ouro I",		500		}, // Lvl 18
-	{	"Ouro I",		550		}, // Lvl 19
-	{	"Ouro I",		600		}, // Lvl 20
-	{	"Ouro I",		650		}, // Lvl 21
-	{	"Ouro I",		700		}, // Lvl 22
-	{	"Ouro II",		800		}, // Lvl 23
-	{	"Ouro II",		900		}, // Lvl 24
-	{	"Ouro II",		1000	}, // Lvl 25
-	{	"Ouro II",		1100	}, // Lvl 26
-	{	"Ouro II",		1200	}, // Lvl 27
-	{	"Ouro III",		1400	}, // Lvl 28
-	{	"Ouro III",		1500	}, // Lvl 29
-	{	"Ouro III",		1600	}, // Lvl 30
-	{	"Ouro IV",		1800	}, // Lvl 31
-	{	"Ouro IV",		2000	}, // Lvl 32
-	{	"Ouro IV",		2200	}, // Lvl 33
-	{	"AK I",			2600	}, // Lvl 34
-	{	"AK I",			2900	}, // Lvl 35
-	{	"AK I",			3200	}, // Lvl 36
-	{	"AK II",			3500	}, // Lvl 37
-	{	"AK II",			3800	}, // Lvl 38
-	{	"AK II",			4100	}, // Lvl 39
-	{	"AK Cruzada",	4500	}, // Lvl 40
-	{	"AK Cruzada",	5000	}, // Lvl 41
-	{	"AK Cruzada",	5500	}, // Lvl 42
-	{	"Xerife",		6500	}, // Lvl 43
-	{	"Xerife",		7000	}, // Lvl 44
-	{	"Xerife",		7500	}, // Lvl 45
-	{	"Aguia I",		8500	}, // Lvl 46
-	{	"Aguia I",		9000	}, // Lvl 47
-	{	"Aguia I",		9500	}, // Lvl 48
-	{	"Aguia II",		10000	}, // Lvl 49
-	{	"Aguia II",		11000	}, // Lvl 50
-	{	"Aguia II",		12000	}, // Lvl 51
-	{	"Supremo",		15000	}, // Lvl 52
-	{	"Supremo",		20000	}, // Lvl 53
-	{	"Supremo",		25000	}, // Lvl 54
-	{	"Supremo",		30000	}, // Lvl 55
-	{	"Supremo",		35000	}, // Lvl 56
-	{	"Global Elite",	50000	}  // Lvl 57
+	//Rank 		  		XP/Lvl
+	{"Silver I",		0		}, // Lvl 0
+	{"Silver I",		40		}, // Lvl 1
+	{"Silver I",		60		}, // Lvl 2
+	{"Silver II",		80		}, // Lvl 3
+	{"Silver II", 		100		}, // Lvl 4
+	{"Silver II",		120		}, // Lvl 5
+	{"Silver III",		140		}, // Lvl 6
+	{"Silver III",		160		}, // Lvl 7
+	{"Silver III",		180		}, // Lvl 8
+	{"Silver IV",		200		}, // Lvl 9
+	{"Silver IV",		220		}, // Lvl 10
+	{"Silver IV",		240		}, // Lvl 11
+	{"Silver V",		260		}, // Lvl 12
+	{"Silver V",		280		}, // Lvl 13
+	{"Silver V",		300		}, // Lvl 14
+	{"Elite Silver",	320		}, // Lvl 15
+	{"Elite Silver",	340		}, // Lvl 16
+	{"Elite Silver",	350		}, // Lvl 17
+	{"Gold I",			500		}, // Lvl 18
+	{"Gold I",			550		}, // Lvl 19
+	{"Gold I",			600		}, // Lvl 20
+	{"Gold I",			650		}, // Lvl 21
+	{"Gold I",			700		}, // Lvl 22
+	{"Gold II",			800		}, // Lvl 23
+	{"Gold II",			900		}, // Lvl 24
+	{"Gold II",			1000	}, // Lvl 25
+	{"Gold II",			1100	}, // Lvl 26
+	{"Gold II",			1200	}, // Lvl 27
+	{"Gold III",		1400	}, // Lvl 28
+	{"Gold III",		1500	}, // Lvl 29
+	{"Gold III",		1600	}, // Lvl 30
+	{"Gold IV",			1800	}, // Lvl 31
+	{"Gold IV",			2000	}, // Lvl 32
+	{"Gold IV",			2200	}, // Lvl 33
+	{"AK I",			2600	}, // Lvl 34
+	{"AK I",			2900	}, // Lvl 35
+	{"AK I",			3200	}, // Lvl 36
+	{"AK II",			3500	}, // Lvl 37
+	{"AK II",			3800	}, // Lvl 38
+	{"AK II",			4100	}, // Lvl 39
+	{"AK Crusade",		4500	}, // Lvl 40
+	{"AK Crusade",		5000	}, // Lvl 41
+	{"AK Crusade",		5500	}, // Lvl 42
+	{"Sheriff",			6500	}, // Lvl 43
+	{"Sheriff",			7000	}, // Lvl 44
+	{"Sheriff",			7500	}, // Lvl 45
+	{"Eagle I",			8500	}, // Lvl 46
+	{"Eagle I",			9000	}, // Lvl 47
+	{"Eagle I",			9500	}, // Lvl 48
+	{"Eagle II",		10000	}, // Lvl 49
+	{"Eagle II",		11000	}, // Lvl 50
+	{"Eagle II",		12000	}, // Lvl 51
+	{"Supreme",			15000	}, // Lvl 52
+	{"Supreme",			20000	}, // Lvl 53
+	{"Supreme",			25000	}, // Lvl 54
+	{"Supreme",			30000	}, // Lvl 55
+	{"Supreme",			35000	}, // Lvl 56
+	{"Global Elite",	50000	}  // Lvl 57
 };
 
 new const xPatents2[][xDataPatents] =
 {
-	{	"Recruta", 0 },
-	{	"Soldado I", 80 },
-	{	"Soldado II", 180 },
-	{	"Soldado III", 240 },
-	{	"Cabo I", 300 },
-	{	"Cabo II", 350 },
-	{	"Cabo III", 400 },
-	{	"Cabo IV", 500 },
-	{	"3º Sargento I", 550 },
-	{	"3º Sargento II", 650 },
-	{	"3º Sargento III", 800 },
-	{	"3º Sargento IV", 950 },
-	{	"2º Sargento I", 1200 },
-	{	"2º Sargento II", 1600 },
-	{	"2º Sargento III", 2200 },
-	{	"2º Sargento IV", 3200 },
-	{	"1º Sargento I", 4100	},
-	{	"1º Sargento II", 5500	},
-	{	"1º Sargento III", 7500	},
-	{	"1º Sargento IV", 9500 },
-	{	"Subtenente", 10500 },
-	{	"Aspirante a Oficial I", 12000 },
-	{	"Aspirante a Oficial II", 14000 },
-	{	"Aspirante a Oficial III", 16000 },
-	{	"Capitão I", 18000 },
-	{	"Capitão II", 20000 },
-	{	"Capitão III", 22000 },
-	{	"Capitão IV", 24000 },
-	{	"Major I", 25000 },
-	{	"Major II", 26000 },
-	{	"Major III", 28000 },
-	{	"Major IV", 29000 },
-	{	"Coronel I", 30000 },
-	{	"Coronel II", 32000 },
-	{	"Coronel III", 34000 },
-	{	"General Brigadeiro", 36000 },
-	{	"General Major", 38000 },
-	{	"General de Divisão", 40000 },
-	{	"General", 42000 },
-	{	"General Global", 50000 }
+	{"Recruit", 				0 		},
+	{"Soldier I", 				80 		},
+	{"Soldier II",				180 	},
+	{"Soldier III", 			240 	},
+	{"Cable I", 				300 	},
+	{"Cable II", 				350 	},
+	{"Cable III", 				400 	},
+	{"Cable IV", 				500 	},
+	{"3rd Sergeant I", 			550 	},
+	{"3rd Sergeant II",			650 	},
+	{"3rd Sergeant III", 		800 	},
+	{"3rd Sergeant IV", 		950 	},
+	{"2nd Sergeant I", 			1200 	},
+	{"2nd Sergeant II", 		1600 	},
+	{"2nd Sergeant III", 		2200 	},
+	{"2nd Sergeant IV", 		3200 	},
+	{"1st Sergeant I", 			4100	},
+	{"1st Sergeant II", 		5500	},
+	{"1st Sergeant III", 		7500	},
+	{"1st Sergeant IV", 		9500 	},
+	{"Sub-Lieutenant", 			10500 	},
+	{"Aspiring Officer I", 		12000 	},
+	{"Aspiring Officer II", 	14000 	},
+	{"Aspiring Officer III", 	16000 	},
+	{"Captain I", 				18000 	},
+	{"Captain II",				20000 	},
+	{"Captain III", 			22000 	},
+	{"Captain IV", 				24000 	},
+	{"Major I", 				25000 	},
+	{"Major II", 				26000 	},
+	{"Major III", 				28000 	},
+	{"Major IV", 				29000 	},
+	{"Colonel I", 				30000 	},
+	{"Colonel II", 				32000 	},
+	{"Colonel III", 			34000 	},
+	{"Gen. Brigadier", 			36000 	},
+	{"Gen. Major", 				38000 	},
+	{"Gen. Division", 			40000 	},
+	{"General", 				42000 	},
+	{"Gen. Global", 			50000 	}
 };
 
 new const xPatentsImages[][] =
@@ -257,47 +246,47 @@ public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
 
-	// xCvarSaveType = register_cvar("csr_ptt_savetype_data", "1"); // 1= Steam + NoSteam com Sxe || 2= Por conta/registro
-	xCvarPttRankStyle = register_cvar("csr_ptt_rank_style", "1"); // 1= Rank CSGO (ingame) || 2= Rank CSGO Perfil
-	xCvarTop10SayGreen = register_cvar("csr_ptt_top10_saygreen", "0");
-	xCvarTop10SayAmount = register_cvar("csr_ptt_top10_say_amount", "10");
-	xCvarXpKillNormal = register_cvar("csr_ptt_xp_kill_normal", "2");
-	xCvarXpKillKnife = register_cvar("csr_ptt_xp_kill_knife", "4");
-	xCvarXpKillHs = register_cvar("csr_ptt_xp_kill_hs", "3");
-	xCvarXpKillHeGrenade = register_cvar("csr_ptt_xp_kill_hegrenade", "5");
-	xCvarXpDiedMin = register_cvar("csr_ptt_xp_died_min", "1");
-	xCvarXpDiedMax = register_cvar("csr_ptt_xp_died_max", "2");
-	xCvarXpKillVipMore = register_cvar("csr_ptt_xp_kill_vip_more", "1");
-	xCvarPrefixOn = register_cvar("csr_ptt_prefix_on", "0");
+	// xCvarSaveType 			= register_cvar("csr_ptt_savetype_data", "1"); // 1= Steam + NoSteam com Sxe || 2= Por conta/registro
+	xCvarPttRankStyle 			= register_cvar("csr_ptt_rank_style", "1"); // 1= Rank CSGO (ingame) || 2= Rank CSGO Perfil
+	xCvarTop10SayGreen 			= register_cvar("csr_ptt_top10_saygreen", "0");
+	xCvarTop10SayAmount 		= register_cvar("csr_ptt_top10_say_amount", "10");
+	xCvarXpKillNormal 			= register_cvar("csr_ptt_xp_kill_normal", "2");
+	xCvarXpKillKnife 			= register_cvar("csr_ptt_xp_kill_knife", "4");
+	xCvarXpKillHs 				= register_cvar("csr_ptt_xp_kill_hs", "3");
+	xCvarXpKillHeGrenade 		= register_cvar("csr_ptt_xp_kill_hegrenade", "5");
+	xCvarXpDiedMin 				= register_cvar("csr_ptt_xp_died_min", "1");
+	xCvarXpDiedMax 				= register_cvar("csr_ptt_xp_died_max", "2");
+	xCvarXpKillVipMore 			= register_cvar("csr_ptt_xp_kill_vip_more", "1");
+	xCvarPrefixOn 				= register_cvar("csr_ptt_prefix_on", "0");
 	xCvarPrefixAdminViewSayFlag = register_cvar("csr_ptt_prefix_admin_view_say_flag", "a");
-	xCvarPrefixBlockChars = register_cvar("csr_ptt_prefix_block_chars", "1");
-	xCvarXpNegative = register_cvar("csr_ptt_xp_negatives", "0");
-	xCvarWelcomeMsg = register_cvar("csr_ptt_welcome_msg", "0");
+	xCvarPrefixBlockChars 		= register_cvar("csr_ptt_prefix_block_chars", "1");
+	xCvarXpNegative 			= register_cvar("csr_ptt_xp_negatives", "0");
+	xCvarWelcomeMsg 			= register_cvar("csr_ptt_welcome_msg", "0");
 
 	register_concmd("amx_reloadprefix", "xLoadPrefix");
 
-	xRegisterSay("hudinfo", "xMenuOptHuds");
-	xRegisterSay("hudxp", "xMenuOptHuds");
-	xRegisterSay("hudlocal", "xMenuOptHuds");
-	xRegisterSay("infolocal", "xMenuOptHuds");
-	xRegisterSay("huds", "xMenuOptHuds");
-	xRegisterSay("top10", "xMotdTop10");
-	xRegisterSay("top15", "xMotdTop10");
-	xRegisterSay("rank", "xSkillTop10");
-	xRegisterSay("xp", "xMenuPatents");
-	xRegisterSay("xps", "xMenuPatents");
-	xRegisterSay("exp", "xMenuPatents");
-	xRegisterSay("patente", "xMenuPatents");
-	xRegisterSay("patentes", "xMenuPatents");
-	xRegisterSay("offhud", "xHudInfoCmd");
+	xRegisterSay("hudinfo", 	"xMenuOptHuds");
+	xRegisterSay("hudxp", 		"xMenuOptHuds");
+	xRegisterSay("hudlocal", 	"xMenuOptHuds");
+	xRegisterSay("infolocal", 	"xMenuOptHuds");
+	xRegisterSay("huds", 		"xMenuOptHuds");
+	xRegisterSay("top10", 		"xMotdTop10");
+	xRegisterSay("top15", 		"xMotdTop10");
+	xRegisterSay("rank", 		"xSkillTop10");
+	xRegisterSay("xp", 			"xMenuPatents");
+	xRegisterSay("xps", 		"xMenuPatents");
+	xRegisterSay("exp", 		"xMenuPatents");
+	xRegisterSay("patente", 	"xMenuPatents");
+	xRegisterSay("patentes", 	"xMenuPatents");
+	xRegisterSay("offhud", 		"xHudInfoCmd");
 	
-	register_event("DeathMsg", "xDeathMsg", "a");
-	register_event("HLTV", "xNewRound", "a", "1=0", "2=0");
-	register_event("TeamInfo", "xTeamInfo", "a");
+	register_event("DeathMsg", 	"xDeathMsg", "a");
+	register_event("HLTV", 		"xNewRound", "a", "1=0", "2=0");
+	register_event("TeamInfo", 	"xTeamInfo", "a");
 
-	register_forward(FM_ClientPutInServer, "xClientPutInServer");
-	register_forward(FM_ClientDisconnect, "xClientDisconnect");
-	register_forward(FM_ClientUserInfoChanged, "xClientUserInfoChanged", 1);
+	register_forward(FM_ClientPutInServer, 		"xClientPutInServer");
+	register_forward(FM_ClientDisconnect, 		"xClientDisconnect");
+	register_forward(FM_ClientUserInfoChanged, 	"xClientUserInfoChanged", 1);
 	//RegisterHam(Ham_Spawn, "player", "xPlayerSpawnPost", 1)
 
 	xSayTxt = get_user_msgid("SayText");
@@ -325,11 +314,11 @@ public plugin_cfg()
 
 	server_cmd("exec %s/csr_patentes.cfg", configs_dir);
 	
-	pre_ips_collect = TrieCreate();
-	pre_names_collect = TrieCreate();
-	pre_steamids_collect = TrieCreate();
-	pre_flags_collect = TrieCreate();
-	client_prefix = TrieCreate();
+	pre_ips_collect 		= TrieCreate();
+	pre_names_collect 		= TrieCreate();
+	pre_steamids_collect 	= TrieCreate();
+	pre_flags_collect 		= TrieCreate();
+	client_prefix 			= TrieCreate();
 
 	xLoadPrefix(0);
 
