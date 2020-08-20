@@ -495,21 +495,20 @@ public xMenuOptHuds(id)
 {
 	new xFmtxMenu[300];
 
-	formatex(xFmtxMenu, charsmax(xFmtxMenu), "%s \wOpções de hud.", PREFIXMENUS);
+	formatex(xFmtxMenu, charsmax(xFmtxMenu), "%s \wHud options.", PREFIXMENUS);
 
 	new xNewMenu = menu_create(xFmtxMenu, "_xMenuOptHuds");
 	
 	if(g_playerData[id][PD_HUD_INFO])
-		menu_additem(xNewMenu, "Ocultar \d[\yHud de XP/Patente/Info Telando\d]");
+		menu_additem(xNewMenu, "Hide \d[\yXP Hud/Patent/Info\d]");
 	else 
-		menu_additem(xNewMenu, "Mostrar \d[\yHud de XP/Patente/Info Telando\d]");
+		menu_additem(xNewMenu, "Show \d[\yXP Hud/Patent/Info\d]");
 
 	if(g_playerData[id][PD_HUD_GEOIP])
-		menu_additem(xNewMenu, "Ocultar minha localização para os outros não verem.");
+		menu_additem(xNewMenu, "Hide my location so others won't see.");
 	else 
-		menu_additem(xNewMenu, "Mostrar minha localização para os outros verem.");
+		menu_additem(xNewMenu, "Show my location for others to see.");
 	
-	menu_setprop(xNewMenu, MPROP_EXITNAME, "Sair");
 	menu_display(id, xNewMenu, 0);
 }
 
@@ -542,17 +541,16 @@ public xMenuPatents(id)
 	new xFmtxMenu[300];
 
 	formatex(xFmtxMenu, charsmax(xFmtxMenu), 
-		"%s \wMenu das Patentes.^n^nXP: %s \y| \wLevel: %d \y| \wPatente: %s", 
+		"%s \wPatents Menu.^n^nXP: %s \y| \wLevel: %d \y| \wPatente: %s", 
 		PREFIXMENUS, xAddPoint(xPlayerXP[id]), xPlayerLevel[id], xPatents[xPlayerLevel[id]][xRankName]);
 	
 	new xNewMenu = menu_create(xFmtxMenu, "_xMenuPatents");
 	
 	menu_additem(xNewMenu, "Top 10");
-	menu_additem(xNewMenu, "Ver patente de um jogador");
-	menu_additem(xNewMenu, "Lista de patentes disponíveis^n");
-	menu_additem(xNewMenu, "\yAjuda");
+	menu_additem(xNewMenu, "See a player's patent");
+	menu_additem(xNewMenu, "List of available patents^n");
+	menu_additem(xNewMenu, "\yHelp");
 	
-	menu_setprop(xNewMenu, MPROP_EXITNAME, "Sair");
 	menu_display(id, xNewMenu, 0);
 }
 
@@ -578,14 +576,14 @@ public _xMenuPatents(id, menu, item)
 		case 2:
 		{
 			xListPatents(id);
-			show_motd(id, xMotd, "LISTA DE PATENTES");
+			show_motd(id, xMotd, "PATENT LIST");
 			xMenuPatents(id);
 		}
 
 		case 3:
 		{
 			xMotdHelp(id);
-			show_motd(id, xMotd, "AJUDA");
+			show_motd(id, xMotd, "HELP");
 			xMenuPatents(id);
 		}
 	}
@@ -595,10 +593,10 @@ public xMotdHelp(id)
 {
 	new iLen;
 	iLen = formatex(xMotd, charsmax(xMotd), "<html><head><meta charset=UTF-8>\
-	<style>body{background: #000 url(^"http://i.imgur.com/FDiuoIk.jpg^") no-repeat fixed center;}table, th, td{border: 1px solid black;border-collapse: collapse;}</style></head><body><table width=100%% cellpadding=2 cellspacing=0 border=1><tr align=center bgcolor=#eeeeee><th width=110%%>AJUDA</tr>");
+	<style>body{background: #000 url(^"http://i.imgur.com/FDiuoIk.jpg^") no-repeat fixed center;}table, th, td{border: 1px solid black;border-collapse: collapse;}</style></head><body><table width=100%% cellpadding=2 cellspacing=0 border=1><tr align=center bgcolor=#eeeeee><th width=110%%>HELP</tr>");
 	
 	iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<tr align=center style=^"color:#fff;font-size:130%%^">");
-	iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td>- Primeiramente, para que seus dados fiquem salvos no banco de dados você precisa estar de sxe ou (estar logado na conta, se ativado!).<br><br> À cada Kill que você faz, você ganha <b>[%d XP]</b>, se morrer você perde de <b>[%d XP]</b> a <b>[%d XP]</b>.<br><br>Jogadores <b>VIPS</b> ganha <b>+%d</b> a mais de XP, ao mesmo perde <b>+%d XP</b>.", get_pcvar_num(xCvarXpKillNormal), get_pcvar_num(xCvarXpDiedMin), get_pcvar_num(xCvarXpDiedMax), get_pcvar_num(xCvarXpKillVipMore), get_pcvar_num(xCvarXpKillVipMore));
+	iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<td>- First, in order for your data to be saved in the database you need to be sxe or (be logged into the account, if activated!).<br><br> For every Kill you make, you earn <b>[%d XP]</b>, if you die you lose from <b>[%d XP]</b> to <b>[%d XP]</b>.<br><br> Players <b>VIPS</b> win from <b>+%d</b> more XP, at the same time you lose from <b>+%d XP</b>.", get_pcvar_num(xCvarXpKillNormal), get_pcvar_num(xCvarXpDiedMin), get_pcvar_num(xCvarXpDiedMax), get_pcvar_num(xCvarXpKillVipMore), get_pcvar_num(xCvarXpKillVipMore));
 
 	iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "</table></body></html>");
 }
@@ -619,7 +617,7 @@ public xViewPatentPlayer(id)
 {
 	new xFmtxMenu[300];
 
-	formatex(xFmtxMenu, charsmax(xFmtxMenu), "%s \wEscolha um jogador para ver a patente.", PREFIXMENUS);
+	formatex(xFmtxMenu, charsmax(xFmtxMenu), "%s \wChoose a player to see the patent.", PREFIXMENUS);
 
 	new xNewMenu = menu_create(xFmtxMenu, "_xViewPatentPlayer");
 	
@@ -638,10 +636,6 @@ public xViewPatentPlayer(id)
 			menu_additem(xNewMenu, xPlayerName, xSzTempId, 0);
 		}
 	}
-
-	menu_setprop(xNewMenu, MPROP_BACKNAME, "Voltar");
-	menu_setprop(xNewMenu, MPROP_NEXTNAME, "Proxima");
-	menu_setprop(xNewMenu, MPROP_EXITNAME, "Sair");
 	
 	menu_display(id, xNewMenu);
 }
@@ -690,14 +684,13 @@ public xMenuSelectTop(id)
 {
 	new xFmtxMenu[300];
 
-	formatex(xFmtxMenu, charsmax(xFmtxMenu), "%s \wOque você deseja ver?", PREFIXMENUS);
+	formatex(xFmtxMenu, charsmax(xFmtxMenu), "%s \wWhat do you want to see?", PREFIXMENUS);
 
 	new xNewMenu = menu_create(xFmtxMenu, "_xMenuSelectTop");
 	
 	menu_additem(xNewMenu, "Top 10");
-	menu_additem(xNewMenu, "Ver minha Posição");
+	menu_additem(xNewMenu, "See my position");
 	
-	menu_setprop(xNewMenu, MPROP_EXITNAME, "Sair");
 	menu_display(id, xNewMenu, 0);
 }
 
@@ -729,7 +722,7 @@ public xSkillTop10(id)
 	new xMyPosTop10;
 	xMyPosTop10 = xMyPosRankSave[id];
 
-	xClientPrintColor(id, "%s !ySua posição é: !g%s !yde !g%s !ycom !g%s !ykills e !g%s !ymortes.", PREFIXCHAT, xAddPoint(xMyPosTop10), xAddPoint(xNtvGetTotalTop10()), xAddPoint(xPlayerKills[id]), xAddPoint(xPlayerDeaths[id]));
+	xClientPrintColor(id, "%s !yYour position is: !g%s !yof !g%s !ywith !g%s !ykills and !g%s !ydeaths.", PREFIXCHAT, xAddPoint(xMyPosTop10), xAddPoint(xNtvGetTotalTop10()), xAddPoint(xPlayerKills[id]), xAddPoint(xPlayerDeaths[id]));
 }
 
 public xLoadPrefix(id)
@@ -741,7 +734,7 @@ public xLoadPrefix(id)
 
 	line = 0, length = 0, pre_flags_count = 0, pre_ips_count = 0, pre_names_count = 0;
 
-	if(!file_exists(file_prefixes)) set_fail_state("Arquivo admin_prefix.ini nao encontrado.");
+	if(!file_exists(file_prefixes)) set_fail_state("Archive admin_prefix.ini not found.");
 
 	while(read_file(file_prefixes, line++ , text, charsmax(text), length) && (pre_ips_count + pre_names_count + pre_steamids_count + pre_flags_count) <= MAX_PREFIXES)
 	{
@@ -799,7 +792,7 @@ public xLoadPrefix(id)
 	}
 	
 	if(id)
-		console_print(id, "Prefix re-carregado :)");
+		console_print(id, "Prefix reloaded :)");
 	
 	return PLUGIN_HANDLED;
 }
@@ -1089,7 +1082,7 @@ public xDeathMsg()
 				get_user_name(xKiller, xPlayerName, charsmax(xPlayerName));
 							
 				//client_cmd(0, "speak ambience/3dmeagle")
-				xClientPrintColor(0, "%s !yJogador !g%s !ySubiu de level. Level: !g%d, !yPatente: !g%s!y.", PREFIXCHAT, xPlayerName, xPlayerLevel[xKiller], xPatents[xPlayerLevel[xKiller]][xRankName]);
+				xClientPrintColor(0, "%s !yPlayer !g%s !yRaised level. Level: !g%d, !Patent: !g%s!y.", PREFIXCHAT, xPlayerName, xPlayerLevel[xKiller], xPatents[xPlayerLevel[xKiller]][xRankName]);
 			}
 		}
 
