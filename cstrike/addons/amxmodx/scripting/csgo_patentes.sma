@@ -10,20 +10,74 @@
 #include <sqlx>
 #include <hamsandwich>
 
-#define PLUGIN 			"CS:GO Rank Patentes"
-#define VERSION 		"0.01"
-#define AUTHOR 			"Aoi.Kagase"
+#define PLUGIN 					"CS:GO Rank Patentes"
+#define VERSION 				"0.01"
+#define AUTHOR 					"Aoi.Kagase"
 
-#define MAX_LEVEL 		58
+#define MAX_LEVEL 				58
+#define MAX_QUERY_LENGTH		2048
+#define MAX_LENGTH				128
+#define MAX_ERR_LENGTH			512
 
 #define get_user_lasthit(%1)	get_ent_data(%1, "CBaseMonster","m_LastHitGroup")
+
+enum _:CVAR_LIST
+{
+	C_XP_KILL_NORMAL,
+	C_XP_KILL_KNIFE,
+	C_XP_KILL_HS,
+	C_XP_KILL_HE,
+};
+
+enum _:PLAYER_DATA
+{
+	P_LEVEL,
+	P_XP,
+	P_KILLS,
+	P_DEATHS,
+};
+
+enum DB_CONFIG
+{
+	DB_HOST[MAX_LENGTH] = 0,
+	DB_USER[MAX_LENGTH],
+	DB_PASS[MAX_LENGTH],
+	DB_NAME[MAX_LENGTH],
+}
 
 enum DATA_PATENTES
 {
 	RANK_NAME[32],
 	RANK_XP,
 }
+new g_plData	[33][PLAYER_DATA];
+new g_cvars			[CVAR_LIST];
 
+//Database Handles
+new Handle:g_dbTaple;
+new Handle:g_dbConnect;
+//Database setting
+new g_dbConfig		[DB_CONFIG];
+//update time
+new g_dbError		[MAX_ERR_LENGTH];
+	// "http://goo.gl/uAez6z",	// Prata 1
+	// "http://goo.gl/VG3qn8",	// Prata 2
+	// "http://goo.gl/kEZ4We",	// Prata 3
+	// "http://goo.gl/mbEVzy",	// Prata 4
+	// "http://goo.gl/m2P7ni",	// Prata 5
+	// "http://goo.gl/Bh1Z4n",	// Prata Elite
+	// "http://goo.gl/djXwQD",	// Ouro 1
+	// "http://goo.gl/9LtLSi",	// Ouro 2
+	// "http://goo.gl/Cr2Mrp",	// Ouro 3
+	// "http://goo.gl/iPP9Eq",	// Ouro 4
+	// "http://goo.gl/QRQWY9",	// Ak 1
+	// "http://goo.gl/dsbScN",	// Ak 2
+	// "http://goo.gl/up6TSS",	// Ak Cruzada
+	// "http://goo.gl/cMi8YK",	// Xerife
+	// "http://goo.gl/wP4VhK",	// Aguia 1
+	// "http://goo.gl/mXXCF2",	// Aguia 2
+	// "http://goo.gl/cpLhP7",	// Supremo
+	// "http://goo.gl/SijqTy"	// Global Elite
 new const PATENTES[][DATA_PATENTES] =
 {
 	//Rank 		  		XP/Lvl
@@ -87,24 +141,35 @@ new const PATENTES[][DATA_PATENTES] =
 	{"Global Elite",	50000	}  // Lvl 57
 };
 
-enum _:CVAR_LIST
+//Create Table
+init_database()
 {
-	C_XP_KILL_NORMAL,
-	C_XP_KILL_KNIFE,
-	C_XP_KILL_HS,
-	C_XP_KILL_HE,
-};
+	new sql[MAX_QUERY_LENGTH + 1];
+	new Handle:queries[10];
+	new len = 0, i = 0;
 
-enum _:PLAYER_DATA
-{
-	P_LEVEL,
-	P_XP,
-	P_KILLS,
-	P_DEATHS,
-};
+	// CREATE TABLE user_info.
+	len = 0;
+	sql = "";
+	len += formatex(sql[len], MAX_QUERY_LENGTH - len, "CREATE TABLE IF NOT EXISTS `%s`.`t_rank`", g_dbConfig[DB_NAME], g_tblNames[TBL_DATA_USER]);
+	len += formatex(sql[len], MAX_QUERY_LENGTH - len, " (`auth_id`		VARCHAR(%d)			NOT NULL,", MAX_AUTHID_LENGTH);
+	len += formatex(sql[len], MAX_QUERY_LENGTH - len, "  `latest_ip`	VARCHAR(%d)			NOT NULL,", MAX_IP_LENGTH);
+	len += formatex(sql[len], MAX_QUERY_LENGTH - len, "  `online_time`	BIGINT UNSIGNED 	DEFAULT  0,");
+	len += formatex(sql[len], MAX_QUERY_LENGTH - len, "  `level`		BIGINT UNSIGNED 	NOT NULL DEFAULT 0,");
+	len += formatex(sql[len], MAX_QUERY_LENGTH - len, "  `xp`			BIGINT UNSIGNED 	NOT NULL DEFAULT 0,");
+	len += formatex(sql[len], MAX_QUERY_LENGTH - len, "  `kills`		BIGINT UNSIGNED 	NOT NULL DEFAULT 0,");
+	len += formatex(sql[len], MAX_QUERY_LENGTH - len, "  `deaths`		BIGINT UNSIGNED 	NOT NULL DEFAULT 0,");
+	len += formatex(sql[len], MAX_QUERY_LENGTH - len, "  `created_at`	DATETIME			NOT NULL DEFAULT CURRENT_TIMESTAMP(),");
+	len += formatex(sql[len], MAX_QUERY_LENGTH - len, "  `updated_at`	DATETIME			NOT NULL DEFAULT CURRENT_TIMESTAMP(),");
+	len += formatex(sql[len], MAX_QUERY_LENGTH - len, " PRIMARY KEY (`auth_id`)");
+	len += formatex(sql[len], MAX_QUERY_LENGTH - len, " );");
+	queries[i++] = SQL_PrepareQuery(g_dbConnect, sql);
+	execute_insert_multi_query(queries ,i);
 
-new g_plData[33][PLAYER_DATA];
-new g_cvars		[CVAR_LIST];
+	return PLUGIN_CONTINUE;
+}
+
+
 
 public plugin_init()
 {
@@ -116,6 +181,9 @@ public plugin_init()
 	g_cvars[C_XP_KILL_HE] 				= register_cvar("ptt_xp_kill_hegrenade",			"5");
 
 	RegisterHam(Ham_TakeDamage, "player", "PlayerTakeDamage");
+
+	set_task(1.0, "plugin_core");
+	return PLUGIN_HANDLED_MAIN;
 }
 
 public PlayerTakeDamage(iVictim, iInflictor, iAttacker, Float:fDamage, bit_Damage)
@@ -125,7 +193,8 @@ public PlayerTakeDamage(iVictim, iInflictor, iAttacker, Float:fDamage, bit_Damag
 	new iWeapon			= (bGrenade ? CSW_HEGRENADE : cs_get_user_weapon(iInflictor));
 	new iAddXP 			= 0;
 
-	if (!is_user_connected(iAttacker) || !is_user_connected(iVictim))
+	if (!is_user_connected(iAttacker)
+	||	!is_user_connected(iVictim))
 		return HAM_IGNORED;
 
 	if (iAttacker == iVictim)
@@ -190,3 +259,62 @@ public CheckLevel(id)
 
 	return true;
 }
+
+//LoadPlugin
+public plugin_core()
+{
+	new error[MAX_ERR_LENGTH + 1];
+	new ercode;
+
+	// Get Database Configs.
+	get_cvar_string("amx_sql_host", g_dbConfig[DB_HOST], charsmax(g_dbConfig[DB_HOST]));
+	get_cvar_string("amx_sql_user", g_dbConfig[DB_USER], charsmax(g_dbConfig[DB_USER]));
+	get_cvar_string("amx_sql_pass", g_dbConfig[DB_PASS], charsmax(g_dbConfig[DB_PASS]));
+	get_cvar_string("amx_sql_db",	g_dbConfig[DB_NAME], charsmax(g_dbConfig[DB_NAME]));
+
+	g_dbTaple 	= SQL_MakeDbTuple(
+		g_dbConfig[DB_HOST],
+		g_dbConfig[DB_USER],
+		g_dbConfig[DB_PASS],
+		g_dbConfig[DB_NAME]
+	);
+	g_dbConnect = SQL_Connect(g_dbTaple, ercode, error, charsmax(error));
+	
+	if (g_dbConnect == Empty_Handle)
+	    server_print("[CSGO:PATENTES] Error No.%d: %s", ercode, error);
+	else 
+	{
+	  	server_print("[CSGO:PATENTES] Connecting successful.");
+	  	init_database();
+  	}
+	return PLUGIN_CONTINUE;
+}
+
+stock execute_insert_multi_query(Handle:query[], count)
+{
+	if (!g_dbConnect)
+		return;
+
+	for(new i = 0; i < count;i++)
+	{
+		if(!SQL_Execute(query[i]))
+		{
+			// if there were any problems
+			SQL_QueryError(query[i], g_dbError, charsmax(g_dbError));
+			set_fail_state(g_dbError);
+		}
+		SQL_FreeHandle(query[i]);
+	}
+}
+
+stock mysql_escape_string(dest[],len)
+{
+    //copy(dest, len, source);
+    replace_all(dest,len,"\\","\\\\");
+    replace_all(dest,len,"\0","\\0");
+    replace_all(dest,len,"\n","\\n");
+    replace_all(dest,len,"\r","\\r");
+    replace_all(dest,len,"\x1a","\Z");
+    replace_all(dest,len,"'","\'");
+    replace_all(dest,len,"^"","\^"");
+} 
