@@ -81,64 +81,64 @@ new g_dbError		[MAX_ERR_LENGTH];
 new const PATENTES[][DATA_PATENTES] =
 {
 	//Rank 		  		XP/Lvl
-	{"Silver I",		0		}, // Lvl 0
-	{"Silver I",		40		}, // Lvl 1
-	{"Silver I",		60		}, // Lvl 2
-	{"Silver II",		80		}, // Lvl 3
-	{"Silver II", 		100		}, // Lvl 4
-	{"Silver II",		120		}, // Lvl 5
-	{"Silver III",		140		}, // Lvl 6
-	{"Silver III",		160		}, // Lvl 7
-	{"Silver III",		180		}, // Lvl 8
-	{"Silver IV",		200		}, // Lvl 9
-	{"Silver IV",		220		}, // Lvl 10
-	{"Silver IV",		240		}, // Lvl 11
-	{"Silver V",		260		}, // Lvl 12
-	{"Silver V",		280		}, // Lvl 13
-	{"Silver V",		300		}, // Lvl 14
-	{"Elite Silver",	320		}, // Lvl 15
-	{"Elite Silver",	340		}, // Lvl 16
-	{"Elite Silver",	350		}, // Lvl 17
-	{"Gold I",			500		}, // Lvl 18
-	{"Gold I",			550		}, // Lvl 19
-	{"Gold I",			600		}, // Lvl 20
-	{"Gold I",			650		}, // Lvl 21
-	{"Gold I",			700		}, // Lvl 22
-	{"Gold II",			800		}, // Lvl 23
-	{"Gold II",			900		}, // Lvl 24
-	{"Gold II",			1000	}, // Lvl 25
-	{"Gold II",			1100	}, // Lvl 26
-	{"Gold II",			1200	}, // Lvl 27
-	{"Gold III",		1400	}, // Lvl 28
-	{"Gold III",		1500	}, // Lvl 29
-	{"Gold III",		1600	}, // Lvl 30
-	{"Gold IV",			1800	}, // Lvl 31
-	{"Gold IV",			2000	}, // Lvl 32
-	{"Gold IV",			2200	}, // Lvl 33
-	{"AK I",			2600	}, // Lvl 34
-	{"AK I",			2900	}, // Lvl 35
-	{"AK I",			3200	}, // Lvl 36
-	{"AK II",			3500	}, // Lvl 37
-	{"AK II",			3800	}, // Lvl 38
-	{"AK II",			4100	}, // Lvl 39
-	{"AK Crusade",		4500	}, // Lvl 40
-	{"AK Crusade",		5000	}, // Lvl 41
-	{"AK Crusade",		5500	}, // Lvl 42
-	{"Sheriff",			6500	}, // Lvl 43
-	{"Sheriff",			7000	}, // Lvl 44
-	{"Sheriff",			7500	}, // Lvl 45
-	{"Eagle I",			8500	}, // Lvl 46
-	{"Eagle I",			9000	}, // Lvl 47
-	{"Eagle I",			9500	}, // Lvl 48
-	{"Eagle II",		10000	}, // Lvl 49
-	{"Eagle II",		11000	}, // Lvl 50
-	{"Eagle II",		12000	}, // Lvl 51
-	{"Supreme",			15000	}, // Lvl 52
-	{"Supreme",			20000	}, // Lvl 53
-	{"Supreme",			25000	}, // Lvl 54
-	{"Supreme",			30000	}, // Lvl 55
-	{"Supreme",			35000	}, // Lvl 56
-	{"Global Elite",	50000	}  // Lvl 57
+	{"Silver I"		,		0		,"https://ux.nu/qlBhT"}, // Lvl 0
+	{"Silver I"		,		40		}, // Lvl 1
+	{"Silver I"		,		60		}, // Lvl 2
+	{"Silver II"	,		80		}, // Lvl 3
+	{"Silver II"	, 		100		}, // Lvl 4
+	{"Silver II"	,		120		}, // Lvl 5
+	{"Silver III"	,		140		}, // Lvl 6
+	{"Silver III"	,		160		}, // Lvl 7
+	{"Silver III"	,		180		}, // Lvl 8
+	{"Silver IV"	,		200		}, // Lvl 9
+	{"Silver IV"	,		220		}, // Lvl 10
+	{"Silver IV"	,		240		}, // Lvl 11
+	{"Silver V"		,		260		}, // Lvl 12
+	{"Silver V"		,		280		}, // Lvl 13
+	{"Silver V"		,		300		}, // Lvl 14
+	{"Elite Silver"	,	320		}, // Lvl 15
+	{"Elite Silver"	,	340		}, // Lvl 16
+	{"Elite Silver"	,	350		}, // Lvl 17
+	{"Gold I"		,			500		}, // Lvl 18
+	{"Gold I"		,			550		}, // Lvl 19
+	{"Gold I"		,			600		}, // Lvl 20
+	{"Gold I"		,			650		}, // Lvl 21
+	{"Gold I"		,			700		}, // Lvl 22
+	{"Gold II"		,			800		}, // Lvl 23
+	{"Gold II"		,			900		}, // Lvl 24
+	{"Gold II"		,			1000	}, // Lvl 25
+	{"Gold II"		,			1100	}, // Lvl 26
+	{"Gold II"		,			1200	}, // Lvl 27
+	{"Gold III"		,		1400	}, // Lvl 28
+	{"Gold III"		,		1500	}, // Lvl 29
+	{"Gold III"		,		1600	}, // Lvl 30
+	{"Gold IV"		,			1800	}, // Lvl 31
+	{"Gold IV"		,			2000	}, // Lvl 32
+	{"Gold IV"		,			2200	}, // Lvl 33
+	{"AK I"			,			2600	}, // Lvl 34
+	{"AK I"			,			2900	}, // Lvl 35
+	{"AK I"			,			3200	}, // Lvl 36
+	{"AK II"		,			3500	}, // Lvl 37
+	{"AK II"		,			3800	}, // Lvl 38
+	{"AK II"		,			4100	}, // Lvl 39
+	{"AK Crusade"	,		4500	}, // Lvl 40
+	{"AK Crusade"	,		5000	}, // Lvl 41
+	{"AK Crusade"	,		5500	}, // Lvl 42
+	{"Sheriff"		,			6500	}, // Lvl 43
+	{"Sheriff"		,			7000	}, // Lvl 44
+	{"Sheriff"		,			7500	}, // Lvl 45
+	{"Eagle I"		,			8500	}, // Lvl 46
+	{"Eagle I"		,			9000	}, // Lvl 47
+	{"Eagle I"		,			9500	}, // Lvl 48
+	{"Eagle II"		,	10000	}, // Lvl 49
+	{"Eagle II"		,	11000	}, // Lvl 50
+	{"Eagle II"		,	12000	}, // Lvl 51
+	{"Supreme"		,	15000	}, // Lvl 52
+	{"Supreme"		,	20000	}, // Lvl 53
+	{"Supreme"		,	25000	}, // Lvl 54
+	{"Supreme"		,	30000	}, // Lvl 55
+	{"Supreme"		,	35000	}, // Lvl 56
+	{"Global Elite"	,	50000	}  // Lvl 57
 };
 
 //Create Table
