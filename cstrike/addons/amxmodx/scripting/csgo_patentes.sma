@@ -47,8 +47,9 @@ enum DB_CONFIG
 
 enum DATA_PATENTES
 {
-	RANK_NAME[32],
+	RANK_NAME	[32],
 	RANK_XP,
+	RANK_IMAGE	[32],
 }
 new g_plData	[33][PLAYER_DATA];
 new g_cvars			[CVAR_LIST];
@@ -60,85 +61,68 @@ new Handle:g_dbConnect;
 new g_dbConfig		[DB_CONFIG];
 //update time
 new g_dbError		[MAX_ERR_LENGTH];
-	// "http://goo.gl/uAez6z",	// Prata 1
-	// "http://goo.gl/VG3qn8",	// Prata 2
-	// "http://goo.gl/kEZ4We",	// Prata 3
-	// "http://goo.gl/mbEVzy",	// Prata 4
-	// "http://goo.gl/m2P7ni",	// Prata 5
-	// "http://goo.gl/Bh1Z4n",	// Prata Elite
-	// "http://goo.gl/djXwQD",	// Ouro 1
-	// "http://goo.gl/9LtLSi",	// Ouro 2
-	// "http://goo.gl/Cr2Mrp",	// Ouro 3
-	// "http://goo.gl/iPP9Eq",	// Ouro 4
-	// "http://goo.gl/QRQWY9",	// Ak 1
-	// "http://goo.gl/dsbScN",	// Ak 2
-	// "http://goo.gl/up6TSS",	// Ak Cruzada
-	// "http://goo.gl/cMi8YK",	// Xerife
-	// "http://goo.gl/wP4VhK",	// Aguia 1
-	// "http://goo.gl/mXXCF2",	// Aguia 2
-	// "http://goo.gl/cpLhP7",	// Supremo
-	// "http://goo.gl/SijqTy"	// Global Elite
+
 new const PATENTES[][DATA_PATENTES] =
 {
 	//Rank 		  		XP/Lvl
-	{"Silver I"		,		0		,"https://ux.nu/qlBhT"}, // Lvl 0
-	{"Silver I"		,		40		}, // Lvl 1
-	{"Silver I"		,		60		}, // Lvl 2
-	{"Silver II"	,		80		}, // Lvl 3
-	{"Silver II"	, 		100		}, // Lvl 4
-	{"Silver II"	,		120		}, // Lvl 5
-	{"Silver III"	,		140		}, // Lvl 6
-	{"Silver III"	,		160		}, // Lvl 7
-	{"Silver III"	,		180		}, // Lvl 8
-	{"Silver IV"	,		200		}, // Lvl 9
-	{"Silver IV"	,		220		}, // Lvl 10
-	{"Silver IV"	,		240		}, // Lvl 11
-	{"Silver V"		,		260		}, // Lvl 12
-	{"Silver V"		,		280		}, // Lvl 13
-	{"Silver V"		,		300		}, // Lvl 14
-	{"Elite Silver"	,	320		}, // Lvl 15
-	{"Elite Silver"	,	340		}, // Lvl 16
-	{"Elite Silver"	,	350		}, // Lvl 17
-	{"Gold I"		,			500		}, // Lvl 18
-	{"Gold I"		,			550		}, // Lvl 19
-	{"Gold I"		,			600		}, // Lvl 20
-	{"Gold I"		,			650		}, // Lvl 21
-	{"Gold I"		,			700		}, // Lvl 22
-	{"Gold II"		,			800		}, // Lvl 23
-	{"Gold II"		,			900		}, // Lvl 24
-	{"Gold II"		,			1000	}, // Lvl 25
-	{"Gold II"		,			1100	}, // Lvl 26
-	{"Gold II"		,			1200	}, // Lvl 27
-	{"Gold III"		,		1400	}, // Lvl 28
-	{"Gold III"		,		1500	}, // Lvl 29
-	{"Gold III"		,		1600	}, // Lvl 30
-	{"Gold IV"		,			1800	}, // Lvl 31
-	{"Gold IV"		,			2000	}, // Lvl 32
-	{"Gold IV"		,			2200	}, // Lvl 33
-	{"AK I"			,			2600	}, // Lvl 34
-	{"AK I"			,			2900	}, // Lvl 35
-	{"AK I"			,			3200	}, // Lvl 36
-	{"AK II"		,			3500	}, // Lvl 37
-	{"AK II"		,			3800	}, // Lvl 38
-	{"AK II"		,			4100	}, // Lvl 39
-	{"AK Crusade"	,		4500	}, // Lvl 40
-	{"AK Crusade"	,		5000	}, // Lvl 41
-	{"AK Crusade"	,		5500	}, // Lvl 42
-	{"Sheriff"		,			6500	}, // Lvl 43
-	{"Sheriff"		,			7000	}, // Lvl 44
-	{"Sheriff"		,			7500	}, // Lvl 45
-	{"Eagle I"		,			8500	}, // Lvl 46
-	{"Eagle I"		,			9000	}, // Lvl 47
-	{"Eagle I"		,			9500	}, // Lvl 48
-	{"Eagle II"		,	10000	}, // Lvl 49
-	{"Eagle II"		,	11000	}, // Lvl 50
-	{"Eagle II"		,	12000	}, // Lvl 51
-	{"Supreme"		,	15000	}, // Lvl 52
-	{"Supreme"		,	20000	}, // Lvl 53
-	{"Supreme"		,	25000	}, // Lvl 54
-	{"Supreme"		,	30000	}, // Lvl 55
-	{"Supreme"		,	35000	}, // Lvl 56
-	{"Global Elite"	,	50000	}  // Lvl 57
+	{"Silver I"		,	0		,"http://bit.do/fHF7P"}, // Lvl 0
+	{"Silver I"		,	40		,"http://bit.do/fHF7P"}, // Lvl 1
+	{"Silver I"		,	60		,"http://bit.do/fHF7P"}, // Lvl 2
+	{"Silver II"	,	80		,"http://bit.do/fHF7U"}, // Lvl 3
+	{"Silver II"	, 	100		,"http://bit.do/fHF7U"}, // Lvl 4
+	{"Silver II"	,	120		,"http://bit.do/fHF7U"}, // Lvl 5
+	{"Silver III"	,	140		,"http://bit.do/fHF7Y"}, // Lvl 6
+	{"Silver III"	,	160		,"http://bit.do/fHF7Y"}, // Lvl 7
+	{"Silver III"	,	180		,"http://bit.do/fHF7Y"}, // Lvl 8
+	{"Silver IV"	,	200		,"http://bit.do/fHF75"}, // Lvl 9
+	{"Silver IV"	,	220		,"http://bit.do/fHF75"}, // Lvl 10
+	{"Silver IV"	,	240		,"http://bit.do/fHF75"}, // Lvl 11
+	{"Silver V"		,	260		,"http://bit.do/fHF79"}, // Lvl 12
+	{"Silver V"		,	280		,"http://bit.do/fHF79"}, // Lvl 13
+	{"Silver V"		,	300		,"http://bit.do/fHF79"}, // Lvl 14
+	{"Elite Silver"	,	320		,"http://bit.do/fHF8c"}, // Lvl 15
+	{"Elite Silver"	,	340		,"http://bit.do/fHF8c"}, // Lvl 16
+	{"Elite Silver"	,	350		,"http://bit.do/fHF8c"}, // Lvl 17
+	{"Gold I"		,	500		,"http://bit.do/fHF8e"}, // Lvl 18
+	{"Gold I"		,	550		,"http://bit.do/fHF8e"}, // Lvl 19
+	{"Gold I"		,	600		,"http://bit.do/fHF8e"}, // Lvl 20
+	{"Gold I"		,	650		,"http://bit.do/fHF8e"}, // Lvl 21
+	{"Gold I"		,	700		,"http://bit.do/fHF8e"}, // Lvl 22
+	{"Gold II"		,	800		,"http://bit.do/fHF8h"}, // Lvl 23
+	{"Gold II"		,	900		,"http://bit.do/fHF8h"}, // Lvl 24
+	{"Gold II"		,	1000	,"http://bit.do/fHF8h"}, // Lvl 25
+	{"Gold II"		,	1100	,"http://bit.do/fHF8h"}, // Lvl 26
+	{"Gold II"		,	1200	,"http://bit.do/fHF8h"}, // Lvl 27
+	{"Gold III"		,	1400	,"http://bit.do/fHF8t"}, // Lvl 28
+	{"Gold III"		,	1500	,"http://bit.do/fHF8t"}, // Lvl 29
+	{"Gold III"		,	1600	,"http://bit.do/fHF8t"}, // Lvl 30
+	{"Gold IV"		,	1800	,"http://bit.do/fHF8u"}, // Lvl 31
+	{"Gold IV"		,	2000	,"http://bit.do/fHF8u"}, // Lvl 32
+	{"Gold IV"		,	2200	,"http://bit.do/fHF8u"}, // Lvl 33
+	{"AK I"			,	2600	,"http://bit.do/fHF8D"}, // Lvl 34
+	{"AK I"			,	2900	,"http://bit.do/fHF8D"}, // Lvl 35
+	{"AK I"			,	3200	,"http://bit.do/fHF8D"}, // Lvl 36
+	{"AK II"		,	3500	,"http://bit.do/fHF8G"}, // Lvl 37
+	{"AK II"		,	3800	,"http://bit.do/fHF8G"}, // Lvl 38
+	{"AK II"		,	4100	,"http://bit.do/fHF8G"}, // Lvl 39
+	{"AK Crusade"	,	4500	,"http://bit.do/fHF8J"}, // Lvl 40
+	{"AK Crusade"	,	5000	,"http://bit.do/fHF8J"}, // Lvl 41
+	{"AK Crusade"	,	5500	,"http://bit.do/fHF8J"}, // Lvl 42
+	{"Sheriff"		,	6500	,"http://bit.do/fHF8N"}, // Lvl 43
+	{"Sheriff"		,	7000	,"http://bit.do/fHF8N"}, // Lvl 44
+	{"Sheriff"		,	7500	,"http://bit.do/fHF8N"}, // Lvl 45
+	{"Eagle I"		,	8500	,"http://bit.do/fHF8V"}, // Lvl 46
+	{"Eagle I"		,	9000	,"http://bit.do/fHF8V"}, // Lvl 47
+	{"Eagle I"		,	9500	,"http://bit.do/fHF8V"}, // Lvl 48
+	{"Eagle II"		,	10000	,"http://bit.do/fHF8Z"}, // Lvl 49
+	{"Eagle II"		,	11000	,"http://bit.do/fHF8Z"}, // Lvl 50
+	{"Eagle II"		,	12000	,"http://bit.do/fHF8Z"}, // Lvl 51
+	{"Supreme"		,	15000	,"http://bit.do/fHF83"}, // Lvl 52
+	{"Supreme"		,	20000	,"http://bit.do/fHF83"}, // Lvl 53
+	{"Supreme"		,	25000	,"http://bit.do/fHF83"}, // Lvl 54
+	{"Supreme"		,	30000	,"http://bit.do/fHF83"}, // Lvl 55
+	{"Supreme"		,	35000	,"http://bit.do/fHF83"}, // Lvl 56
+	{"Global Elite"	,	50000	,"http://bit.do/fHF85"}  // Lvl 57
 };
 
 //Create Table
@@ -151,7 +135,7 @@ init_database()
 	// CREATE TABLE user_info.
 	len = 0;
 	sql = "";
-	len += formatex(sql[len], MAX_QUERY_LENGTH - len, "CREATE TABLE IF NOT EXISTS `%s`.`t_rank`", g_dbConfig[DB_NAME], g_tblNames[TBL_DATA_USER]);
+	len += formatex(sql[len], MAX_QUERY_LENGTH - len, "CREATE TABLE IF NOT EXISTS `%s`.`t_rank`", g_dbConfig[DB_NAME]);
 	len += formatex(sql[len], MAX_QUERY_LENGTH - len, " (`auth_id`		VARCHAR(%d)			NOT NULL,", MAX_AUTHID_LENGTH);
 	len += formatex(sql[len], MAX_QUERY_LENGTH - len, "  `latest_ip`	VARCHAR(%d)			NOT NULL,", MAX_IP_LENGTH);
 	len += formatex(sql[len], MAX_QUERY_LENGTH - len, "  `online_time`	BIGINT UNSIGNED 	DEFAULT  0,");
@@ -169,8 +153,6 @@ init_database()
 	return PLUGIN_CONTINUE;
 }
 
-
-
 public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
@@ -180,9 +162,19 @@ public plugin_init()
 	g_cvars[C_XP_KILL_HS] 				= register_cvar("ptt_xp_kill_hs", 					"3");
 	g_cvars[C_XP_KILL_HE] 				= register_cvar("ptt_xp_kill_hegrenade",			"5");
 
+	new iMax = get_plugins_cvarsnum();
+	new iTempId, iPcvar, szCvarName[256], szCvarValue[128];
+	for(new i; i<iMax; i++)
+	{
+		get_plugins_cvar(i, szCvarName, charsmax(szCvarName), _, iTempId, iPcvar);
+		get_pcvar_string(iPcvar, szCvarValue, charsmax(szCvarValue));
+		server_print("%s: %s", szCvarName, szCvarValue);
+	}
+
 	RegisterHam(Ham_TakeDamage, "player", "PlayerTakeDamage");
 
-	set_task(1.0, "plugin_core");
+
+//	set_task(1.0, "plugin_core");
 	return PLUGIN_HANDLED_MAIN;
 }
 
@@ -222,15 +214,20 @@ public PlayerTakeDamage(iVictim, iInflictor, iAttacker, Float:fDamage, bit_Damag
 
 	g_plData[iAttacker][P_XP] += iAddXP; 
 
-
-	if (g_plData[iAttacker][P_LEVEL] < MAX_LEVEL - 1)
+	new iLevel 	= g_plData[iAttacker][P_LEVEL];
+	new iXP		= g_plData[iAttacker][P_XP];
+	while (iXP > PATENTES[iLevel][RANK_XP])
 	{
-		if (g_plData[iAttacker][P_XP] >= PATENTES[g_plData[iAttacker][P_LEVEL] + 1][DATA_PATENTES:RANK_XP])
-		{
-			CheckLevel(iAttacker);
-			client_print_color(0, print_chat, "!yPlayer !g%n !yRaised level. Level: !g%d, !Patent: !g%s!y.", iAttacker, g_plData[iAttacker][P_LEVEL], PATENTES[g_plData[iAttacker][P_LEVEL]][RANK_NAME]);
-		}
+		if (iLevel < MAX_LEVEL - 1)
+			iLevel++;
 	}
+
+	if (g_plData[iAttacker][P_LEVEL] < iLevel)
+	{
+		client_print_color(0, print_chat, "^1Player ^4%n ^1Raised level. Level: ^4%d, !Patent: ^4%s^1.", iAttacker, g_plData[iAttacker][P_LEVEL], PATENTES[g_plData[iAttacker][P_LEVEL]][RANK_NAME]);
+		g_plData[iAttacker][P_LEVEL] = iLevel;
+	}
+
 	g_plData[iAttacker][P_KILLS] ++;
 	g_plData[iVictim][P_DEATHS] ++;
 
@@ -240,24 +237,6 @@ public PlayerTakeDamage(iVictim, iInflictor, iAttacker, Float:fDamage, bit_Damag
 	//xSaveTop10Data(xKiller);
 	//xSaveTop10Data(xVictim);
 	return HAM_IGNORED;
-}
-
-public CheckLevel(id)
-{
-	if(g_plData[id][P_LEVEL] <= MAX_LEVEL - 1)
-	{
-		g_plData[id][P_LEVEL] = 0;
-						
-		while(g_plData[id][P_XP] >= PATENTES[g_plData[id][P_LEVEL] + 1][DATA_PATENTES:RANK_XP])
-		{
-			g_plData[id][P_LEVEL] ++;
-							
-			if(g_plData[id][P_LEVEL] == MAX_LEVEL - 1)
-				return false;
-		}
-	}
-
-	return true;
 }
 
 //LoadPlugin
@@ -318,3 +297,94 @@ stock mysql_escape_string(dest[],len)
     replace_all(dest,len,"'","\'");
     replace_all(dest,len,"^"","\^"");
 } 
+
+public CreateMotdTop10()
+{
+	new iLen, iRandomCss;
+	new xMotd[1024];
+
+	iRandomCss = random_num(0, 1);
+
+	iLen += formatex(xMotd[iLen], charsmax(xMotd), "<meta charset=UTF-8>");
+	iLen += formatex(xMotd[iLen], charsmax(xMotd), "*{margin:0px;}");
+	iLen += formatex(xMotd[iLen], charsmax(xMotd), "<style>");
+	iLen += formatex(xMotd[iLen], charsmax(xMotd), "body{color:#fff;background:url(^"%s^")}", iRandomCss ? "http://bit.do/fHGu6" : "http://bit.do/fHGu4");
+	iLen += formatex(xMotd[iLen], charsmax(xMotd), "table{border-collapse:collapse;border: 1px solid #000;text-align:center;}");
+	iLen += formatex(xMotd[iLen], charsmax(xMotd), "</style>");
+	iLen += formatex(xMotd[iLen], charsmax(xMotd), "<body>");
+	iLen += formatex(xMotd[iLen], charsmax(xMotd), "<table width=100%% height=100%% border=1>");
+	iLen += formatex(xMotd[iLen], charsmax(xMotd), "<tr bgcolor=#4c4c4c style=^"color:#fff;^">");
+	iLen += formatex(xMotd[iLen], charsmax(xMotd), "<th width=5%%>#</th>");
+	iLen += formatex(xMotd[iLen], charsmax(xMotd), "<th width=50%%>NAME</th>");
+	iLen += formatex(xMotd[iLen], charsmax(xMotd), "<th width=15%%>KILLS</th>");
+	iLen += formatex(xMotd[iLen], charsmax(xMotd), "<th width=15%%>DEATHS</th>");
+	iLen += formatex(xMotd[iLen], charsmax(xMotd), "<th width=10%%>XP</th>");
+	iLen += formatex(xMotd[iLen], charsmax(xMotd), "<th width=20%%>PATENTES</th>");
+	iLen += formatex(xMotd[iLen], charsmax(xMotd), "</tr>");
+
+	// new Array:aKey = ArrayCreate(35);
+	// new Array:aData = ArrayCreate(128);
+///	new Array:aAll = ArrayCreate(xTop15Data);
+	
+	// fvault_load(db_top10_data, aKey, aData);
+	
+	// new iArraySize = ArraySize(aKey);
+	
+///	new Data[xTop15Data];
+	
+	// new i;
+	// for( i = 0; i < iArraySize; i++ )
+	// {
+	// 	ArrayGetString(aKey, i, Data[szAuthID], sizeof Data[szAuthID]-1);
+	// 	ArrayGetString(aData, i, Data[szSkillP_Data], sizeof Data[szSkillP_Data]-1);
+		
+	// 	ArrayPushArray(aAll, Data);
+	// }
+	
+	// ArraySort(aAll, "xSortData");
+	
+// 	new szPlayerKills[10];
+// 	new szPlayerDeahts[10];
+	
+// 	new szName[25], xGetDataXps[50];
+// 	new iSize = clamp( iArraySize, 0, 10);
+
+// 	new j;
+// 	for(j = 0; j < iSize; j++)
+// 	{
+// 		ArrayGetArray( aAll, j, Data );
+		
+// //		fvault_get_data( db_top10_names, Data[ szAuthID ], szName, charsmax( szName ) );
+		
+// 		replace_all(szName, charsmax(szName), "<", "");
+// 		replace_all(szName, charsmax(szName), ">", "");
+// 		replace_all(szName, charsmax(szName), "%", "");
+		
+// 		parse(Data[szSkillP_Data],szPlayerKills, charsmax(szPlayerKills), szPlayerDeahts, charsmax(szPlayerDeahts));
+		
+// //		fvault_get_data(db_patents, Data[ szAuthID ], xGetDataXps, charsmax(xGetDataXps));
+
+// 		new xPlayerXpRank = str_to_num(xGetDataXps);
+// 		new xPlayerLvlRank;
+
+// 		if(xPlayerLvlRank <= MAXLEVEL_CSGO-1)
+// 		{
+// 			xPlayerLvlRank = 0;
+			
+// 			while(xPlayerXpRank >= xPatents[xPlayerLvlRank+1][xRankXp])
+// 			{
+// 				xPlayerLvlRank ++;
+							
+// 				if(xPlayerLvlRank == MAXLEVEL_CSGO-1)
+// 					break;
+// 			}
+// 		}
+
+// 		iLen += formatex(xMotd[iLen], charsmax(xMotd) - iLen, "<tr><td>%i<td>%s<td>%s<td>%s<td>%s<td><img src=^"%s^" width=80 hight=30/>", j + 1, szName, xAddPoint(str_to_num(szPlayerKills)),
+// 		xAddPoint(str_to_num(szPlayerDeahts)), xAddPoint(xPlayerXpRank), xGetUserImgRank(xPlayerLvlRank));
+// 	}
+	
+	// ArrayDestroy(aKey);
+	// ArrayDestroy(aData);
+	// ArrayDestroy(aAll);
+}
